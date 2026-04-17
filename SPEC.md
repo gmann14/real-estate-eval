@@ -9,6 +9,39 @@
 
 ---
 
+## ⚠️ Current Status vs. Full Spec
+
+This document describes the **full target architecture**, including a
+deterministic TypeScript engine that does not yet exist. What's built today is
+a **markdown + Claude-Code-agent** framework that produces the same analysis
+quality but relies on the agent (not compiled code) for financial math.
+
+| Component | Current State | Target State |
+|-----------|---------------|--------------|
+| Input template | ✅ `templates/evaluation-template.md` | same |
+| Analysis template | ✅ `templates/analysis-template.md` | same |
+| Enhancement template | ✅ `templates/enhancements-template.md` | same |
+| Province config (NS) | ✅ `config/provinces/ns.md` | same |
+| CMHC config | ✅ `config/cmhc-premiums.md` | same |
+| Default assumptions | ✅ `config/defaults.md` | same |
+| Owner profile | ✅ example + gitignored personal | same |
+| Agent workflow | ✅ `.claude/skills/evaluate-property/SKILL.md` | same + calls deterministic engine |
+| Financial math | ❌ done by agent | TypeScript engine with unit tests (`src/analysis/*`) |
+| Google Sheets export | ❌ not built | TypeScript module (`src/output/google-sheets.ts`) |
+| Telegram TL;DR | ❌ not built | TypeScript module (`src/output/telegram.ts`) |
+| CLI (`npx real-estate-eval`) | ❌ not built | Thin TypeScript CLI over the engine |
+| Multi-province | 🟡 NS only | Add files to `config/provinces/` |
+
+**Read this spec as a roadmap.** Sections 2–9 describe what the tool will do
+once Phase 2 (deterministic engine) and Phase 3 (personal-use features) are
+built. Sections 3, 7, 8.1, and 10 describe what works today.
+
+See the repo-level `README.md` for what's actually usable right now.
+
+---
+
+---
+
 ## Table of Contents
 
 1. [Overview](#1-overview)
