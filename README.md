@@ -23,6 +23,14 @@ cd real-estate-eval
 The skill at `.claude/skills/evaluate-property/` is picked up automatically
 when Claude Code runs in this directory.
 
+Optional — install the TypeScript tooling if you plan to run tests or
+contribute to the deterministic helpers:
+
+```bash
+npm install
+npm test
+```
+
 ### 2. Configure your owner profile (optional but recommended)
 
 ```bash
