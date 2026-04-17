@@ -1,0 +1,29 @@
+# Personal evaluations — each folder is private to the user
+evaluations/*
+!evaluations/README.md
+!evaluations/examples/
+!evaluations/.gitkeep
+
+# Personal owner profile
+config/owner-profile.md
+config/owner-profile.yaml
+
+# Environment / secrets
+.env
+.env.local
+*.key
+
+# Node / build artifacts (for future TS engine)
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
