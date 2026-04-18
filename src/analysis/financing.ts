@@ -237,12 +237,15 @@ export function calculateClosingCosts(
 }
 
 export function generateFinancingScenarios(price: number): FinancingScenario[] {
+  const cmhcConfig = loadCmhcConfig();
   const scenarioDefinitions = [
     { name: "Low leverage", downPaymentPercent: 5, insured: true },
     { name: "Medium leverage", downPaymentPercent: 10, insured: true },
     { name: "Conventional", downPaymentPercent: 20, insured: false },
     { name: "Investment", downPaymentPercent: 20, insured: false },
-  ] as const;
+  ].filter((scenarioDefinition) =>
+    !scenarioDefinition.insured || price <= cmhcConfig.rules.max_price
+  );
 
   return scenarioDefinitions.map((scenarioDefinition) => {
     const downPaymentAmount = downPaymentAmountForPercent(price, scenarioDefinition.downPaymentPercent);

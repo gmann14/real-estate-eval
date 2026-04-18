@@ -104,6 +104,13 @@ test("generateFinancingScenarios returns the four required scenarios for the mod
   );
 });
 
+test("generateFinancingScenarios excludes insured scenarios above the CMHC price cap", () => {
+  assert.deepEqual(
+    generateFinancingScenarios(1500000).map((scenario) => scenario.name),
+    ["Conventional", "Investment"],
+  );
+});
+
 test("analysis index re-exports the financing API", () => {
   assert.deepEqual(Object.keys(analysis).sort(), [
     "calculateClosingCosts",
