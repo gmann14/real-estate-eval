@@ -15,4 +15,5 @@ test("vitest.config.ts targets node-based Vitest test files", () => {
 
   assert.equal(config.test?.environment, "node");
   assert.deepEqual(config.test?.include, ["tests/**/*.vitest.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"]);
+  assert.equal(config.test?.passWithNoTests, true);
 });
