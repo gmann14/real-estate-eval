@@ -1,0 +1,26 @@
+{
+  "province": "Nova Scotia",
+  "code": "NS",
+  "closing_costs": {
+    "deed_transfer_tax": {
+      "type": "flat_rate",
+      "rate": 0.015
+    },
+    "legal_fees": {
+      "default": 2500
+    },
+    "home_inspection": {
+      "default": 500
+    },
+    "appraisal": {
+      "required_for": "insured",
+      "cost": 350
+    },
+    "title_insurance": {
+      "cost": 350
+    },
+    "pst_on_cmhc": {
+      "applicable": false
+    }
+  }
+}

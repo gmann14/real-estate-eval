@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "max_price": 1499999,
+    "min_down_payment": [
+      { "up_to": 500000, "rate": 0.05 },
+      { "from": 500001, "to": 1499999, "rate": 0.1 }
+    ],
+    "premiums": [
+      { "ltv_min": 0.8001, "ltv_max": 0.85, "rate": 0.028 },
+      { "ltv_min": 0.8501, "ltv_max": 0.9, "rate": 0.031 },
+      { "ltv_min": 0.9001, "ltv_max": 0.95, "rate": 0.04 }
+    ],
+    "owner_occupy_required": true,
+    "max_amortization_insured": 25,
+    "multi_unit_rules": {
+      "duplex": { "max_ltv": 0.95 },
+      "triplex": { "max_ltv": 0.9 },
+      "fourplex": { "max_ltv": 0.9 },
+      "non_owner": { "max_ltv": 0.8 }
+    }
+  }
+}
