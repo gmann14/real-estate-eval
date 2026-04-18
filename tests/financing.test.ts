@@ -10,12 +10,12 @@ test("monthlyPayment matches the validated Prince Street fixture", () => {
   const principal = 479180;
   const annualRate = 0.042;
   const totalMonths = 25 * 12;
-  const monthlyRate = annualRate / 12;
+  const monthlyRate = Math.pow(1 + annualRate / 2, 1 / 6) - 1;
   const growthFactor = Math.pow(1 + monthlyRate, totalMonths);
   const expectedPayment = Math.round((principal * monthlyRate * growthFactor) / (growthFactor - 1));
 
-  assert.equal(expectedPayment, 2583);
-  assert.equal(monthlyPayment(479180, 0.042, 5, 25), 2583);
+  assert.equal(expectedPayment, 2573);
+  assert.equal(monthlyPayment(479180, 0.042, 5, 25), 2573);
 });
 
 test("monthlyPayment returns a zero-interest payment when the rate is zero", () => {
@@ -80,7 +80,7 @@ test("generateFinancingScenarios returns the four required scenarios for the mod
         downPaymentAmount: 24250,
         cmhcPremium: 18430,
         totalMortgage: 479180,
-        monthlyPayment: 2583,
+        monthlyPayment: 2573,
         cashToClose: 35225,
         closingCosts: {
           province: "NS",
@@ -99,7 +99,7 @@ test("generateFinancingScenarios returns the four required scenarios for the mod
         downPaymentAmount: 48500,
         cmhcPremium: 13531.5,
         totalMortgage: 450031.5,
-        monthlyPayment: 2425,
+        monthlyPayment: 2416,
         cashToClose: 59475,
         closingCosts: {
           province: "NS",
@@ -118,7 +118,7 @@ test("generateFinancingScenarios returns the four required scenarios for the mod
         downPaymentAmount: 97000,
         cmhcPremium: 0,
         totalMortgage: 388000,
-        monthlyPayment: 2091,
+        monthlyPayment: 2083,
         cashToClose: 107625,
         closingCosts: {
           province: "NS",
@@ -137,7 +137,7 @@ test("generateFinancingScenarios returns the four required scenarios for the mod
         downPaymentAmount: 97000,
         cmhcPremium: 0,
         totalMortgage: 388000,
-        monthlyPayment: 2091,
+        monthlyPayment: 2083,
         cashToClose: 107625,
         closingCosts: {
           province: "NS",
@@ -168,7 +168,7 @@ test("analysis index re-exports the financing API", () => {
     "generateFinancingScenarios",
     "monthlyPayment",
   ]);
-  assert.equal(analysis.monthlyPayment(479180, 0.042, 5, 25), 2583);
+  assert.equal(analysis.monthlyPayment(479180, 0.042, 5, 25), 2573);
 });
 
 test("scenario exports are available from the scenario module", () => {
