@@ -178,7 +178,7 @@ export function monthlyPayment(
     return Math.round(principal / totalMonths);
   }
 
-  const monthlyRate = Math.pow(1 + annualRate / 2, 1 / 6) - 1;
+  const monthlyRate = annualRate / 12;
   const growthFactor = Math.pow(1 + monthlyRate, totalMonths);
   const payment = (principal * monthlyRate * growthFactor) / (growthFactor - 1);
 

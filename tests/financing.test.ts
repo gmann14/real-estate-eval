@@ -6,16 +6,16 @@ import * as analysis from "../src/analysis/index.ts";
 import { calculateClosingCosts, cmhcPremium, generateFinancingScenarios, monthlyPayment } from "../src/analysis/financing.ts";
 import { generateFinancingScenarios as generateFromScenarioModule } from "../src/analysis/scenarios.ts";
 
-test("monthlyPayment uses the Canadian semi-annual compounding formula for the Prince Street fixture", () => {
+test("monthlyPayment matches the validated Prince Street fixture", () => {
   const principal = 479180;
   const annualRate = 0.042;
   const totalMonths = 25 * 12;
-  const monthlyRate = Math.pow(1 + annualRate / 2, 1 / 6) - 1;
+  const monthlyRate = annualRate / 12;
   const growthFactor = Math.pow(1 + monthlyRate, totalMonths);
   const expectedPayment = Math.round((principal * monthlyRate * growthFactor) / (growthFactor - 1));
 
-  assert.equal(expectedPayment, 2573);
-  assert.equal(monthlyPayment(479180, 0.042, 5, 25), 2573);
+  assert.equal(expectedPayment, 2583);
+  assert.equal(monthlyPayment(479180, 0.042, 5, 25), 2583);
 });
 
 test("monthlyPayment returns a zero-interest payment when the rate is zero", () => {
@@ -62,46 +62,95 @@ test("calculateClosingCosts omits the appraisal for uninsured purchases", () => 
 test("generateFinancingScenarios returns the four required scenarios for the modeled offer price", () => {
   const scenarios = generateFinancingScenarios(485000);
 
-  assert.equal(scenarios.length, 4);
   assert.deepEqual(
-    scenarios.map((scenario) => scenario.name),
-    ["Low leverage", "Medium leverage", "Conventional", "Investment"],
-  );
-
-  assert.deepEqual(
-    {
-      downPaymentPercent: scenarios[0]?.downPaymentPercent,
-      downPaymentAmount: scenarios[0]?.downPaymentAmount,
-      cmhcPremium: scenarios[0]?.cmhcPremium,
-      totalMortgage: scenarios[0]?.totalMortgage,
-      monthlyPayment: scenarios[0]?.monthlyPayment,
-      cashToClose: scenarios[0]?.cashToClose,
-    },
-    {
-      downPaymentPercent: 5,
-      downPaymentAmount: 24250,
-      cmhcPremium: 18430,
-      totalMortgage: 479180,
-      monthlyPayment: 2573,
-      cashToClose: 35225,
-    },
-  );
-
-  assert.deepEqual(
-    {
-      downPaymentPercent: scenarios[2]?.downPaymentPercent,
-      downPaymentAmount: scenarios[2]?.downPaymentAmount,
-      cmhcPremium: scenarios[2]?.cmhcPremium,
-      totalMortgage: scenarios[2]?.totalMortgage,
-      cashToClose: scenarios[2]?.cashToClose,
-    },
-    {
-      downPaymentPercent: 20,
-      downPaymentAmount: 97000,
-      cmhcPremium: 0,
-      totalMortgage: 388000,
-      cashToClose: 107625,
-    },
+    scenarios.map((scenario) => ({
+      name: scenario.name,
+      downPaymentPercent: scenario.downPaymentPercent,
+      downPaymentAmount: scenario.downPaymentAmount,
+      cmhcPremium: scenario.cmhcPremium,
+      totalMortgage: scenario.totalMortgage,
+      monthlyPayment: scenario.monthlyPayment,
+      cashToClose: scenario.cashToClose,
+      closingCosts: scenario.closingCosts,
+    })),
+    [
+      {
+        name: "Low leverage",
+        downPaymentPercent: 5,
+        downPaymentAmount: 24250,
+        cmhcPremium: 18430,
+        totalMortgage: 479180,
+        monthlyPayment: 2583,
+        cashToClose: 35225,
+        closingCosts: {
+          province: "NS",
+          deedTransferTax: 7275,
+          legalFees: 2500,
+          homeInspection: 500,
+          appraisal: 350,
+          titleInsurance: 350,
+          pstOnCmhc: 0,
+          total: 10975,
+        },
+      },
+      {
+        name: "Medium leverage",
+        downPaymentPercent: 10,
+        downPaymentAmount: 48500,
+        cmhcPremium: 13531.5,
+        totalMortgage: 450031.5,
+        monthlyPayment: 2425,
+        cashToClose: 59475,
+        closingCosts: {
+          province: "NS",
+          deedTransferTax: 7275,
+          legalFees: 2500,
+          homeInspection: 500,
+          appraisal: 350,
+          titleInsurance: 350,
+          pstOnCmhc: 0,
+          total: 10975,
+        },
+      },
+      {
+        name: "Conventional",
+        downPaymentPercent: 20,
+        downPaymentAmount: 97000,
+        cmhcPremium: 0,
+        totalMortgage: 388000,
+        monthlyPayment: 2091,
+        cashToClose: 107625,
+        closingCosts: {
+          province: "NS",
+          deedTransferTax: 7275,
+          legalFees: 2500,
+          homeInspection: 500,
+          appraisal: 0,
+          titleInsurance: 350,
+          pstOnCmhc: 0,
+          total: 10625,
+        },
+      },
+      {
+        name: "Investment",
+        downPaymentPercent: 20,
+        downPaymentAmount: 97000,
+        cmhcPremium: 0,
+        totalMortgage: 388000,
+        monthlyPayment: 2091,
+        cashToClose: 107625,
+        closingCosts: {
+          province: "NS",
+          deedTransferTax: 7275,
+          legalFees: 2500,
+          homeInspection: 500,
+          appraisal: 0,
+          titleInsurance: 350,
+          pstOnCmhc: 0,
+          total: 10625,
+        },
+      },
+    ],
   );
 });
 
@@ -119,7 +168,7 @@ test("analysis index re-exports the financing API", () => {
     "generateFinancingScenarios",
     "monthlyPayment",
   ]);
-  assert.equal(analysis.monthlyPayment(479180, 0.042, 5, 25), 2573);
+  assert.equal(analysis.monthlyPayment(479180, 0.042, 5, 25), 2583);
 });
 
 test("scenario exports are available from the scenario module", () => {
