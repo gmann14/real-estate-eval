@@ -11,6 +11,22 @@ const requiredScripts = {
   "test:vitest": "vitest run",
   typecheck: "tsc --noEmit",
 };
+const requiredCompilerOptions = {
+  allowJs: true,
+  checkJs: true,
+  target: "ES2022",
+  module: "NodeNext",
+  moduleResolution: "NodeNext",
+  strict: true,
+  noEmit: true,
+  exactOptionalPropertyTypes: true,
+  noFallthroughCasesInSwitch: true,
+  noUncheckedIndexedAccess: true,
+  esModuleInterop: true,
+  forceConsistentCasingInFileNames: true,
+  skipLibCheck: true,
+};
+const requiredIncludes = ["scripts/**/*.mjs", "tests/**/*.test.mjs"];
 
 for (const dependency of requiredDependencies) {
   if (!packageJson.dependencies?.[dependency]) {
@@ -30,10 +46,22 @@ for (const [scriptName, command] of Object.entries(requiredScripts)) {
   }
 }
 
-if (!tsconfig.compilerOptions?.strict) {
-  throw new Error("TypeScript strict mode must be enabled");
+for (const [optionName, expectedValue] of Object.entries(requiredCompilerOptions)) {
+  if (tsconfig.compilerOptions?.[optionName] !== expectedValue) {
+    throw new Error(
+      `Unexpected compiler option ${optionName}: ${tsconfig.compilerOptions?.[optionName] ?? "missing"}`,
+    );
+  }
 }
 
-if (!Array.isArray(tsconfig.include) || !tsconfig.include.includes("tests/**/*.test.mjs")) {
-  throw new Error("tsconfig.json must include the test files");
+if (tsconfig.compilerOptions?.lib?.[0] !== "ES2022") {
+  throw new Error(`Unexpected compiler option lib: ${tsconfig.compilerOptions?.lib ?? "missing"}`);
+}
+
+if (tsconfig.compilerOptions?.types?.[0] !== "node") {
+  throw new Error(`Unexpected compiler option types: ${tsconfig.compilerOptions?.types ?? "missing"}`);
+}
+
+if (!Array.isArray(tsconfig.include) || requiredIncludes.some((pattern) => !tsconfig.include.includes(pattern))) {
+  throw new Error("tsconfig.json must include the script and test files");
 }
