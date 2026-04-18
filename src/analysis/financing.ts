@@ -156,6 +156,10 @@ function downPaymentAmountForPercent(purchasePrice: number, downPaymentPercent: 
   return roundCurrency(Math.max(requestedAmount, minimumDownPayment(purchasePrice)));
 }
 
+function downPaymentPercentForAmount(purchasePrice: number, downPaymentAmount: number): number {
+  return roundCurrency((downPaymentAmount / purchasePrice) * 100);
+}
+
 function cmhcRateForLtv(ltv: number): number {
   const premiumBand = loadCmhcConfig().rules.premiums.find((band) => ltv >= band.ltv_min && ltv <= band.ltv_max);
   return premiumBand?.rate ?? 0;
@@ -258,7 +262,7 @@ export function generateFinancingScenarios(price: number): FinancingScenario[] {
 
     return {
       name: scenarioDefinition.name,
-      downPaymentPercent: scenarioDefinition.downPaymentPercent,
+      downPaymentPercent: downPaymentPercentForAmount(price, downPaymentAmount),
       downPaymentAmount,
       cmhcPremium: insurancePremium,
       totalMortgage,

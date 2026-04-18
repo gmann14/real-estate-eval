@@ -161,6 +161,26 @@ test("generateFinancingScenarios excludes insured scenarios above the CMHC price
   );
 });
 
+test("generateFinancingScenarios reports the effective minimum down payment above $500K", () => {
+  const [lowLeverage, mediumLeverage] = generateFinancingScenarios(750000);
+
+  assert.deepEqual(
+    {
+      name: lowLeverage?.name,
+      downPaymentPercent: lowLeverage?.downPaymentPercent,
+      downPaymentAmount: lowLeverage?.downPaymentAmount,
+      cmhcPremium: lowLeverage?.cmhcPremium,
+    },
+    {
+      name: "Low leverage",
+      downPaymentPercent: 6.67,
+      downPaymentAmount: 50000,
+      cmhcPremium: 28000,
+    },
+  );
+  assert.equal(mediumLeverage?.downPaymentPercent, 10);
+});
+
 test("analysis index re-exports the financing API", () => {
   assert.deepEqual(Object.keys(analysis).sort(), [
     "calculateClosingCosts",
