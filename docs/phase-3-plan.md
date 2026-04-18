@@ -1,6 +1,8 @@
 # Phase 3 Plan — Listing Ingestion & Auto-Analysis
 
-> **Status:** Draft for review. Not yet implemented.
+> **Status:** Mode A MVP shipped (April 2026). Mode B (scheduled
+> discovery) is the next Phase 3.1 target — see the sketch at the
+> bottom of this file.
 
 ## Goal
 
@@ -217,15 +219,20 @@ Mode A skill is callable from one eventually.
 
 ## Success criteria for Phase 3
 
-- [ ] `/ingest-listing <viewpoint-url>` produces a full
-      `evaluations/<slug>/` folder end-to-end
-- [ ] `/ingest-listing` with pasted text works even when the URL
-      fetch is blocked
-- [ ] `criteria.md` is parsed and hard-filters actually reject
-- [ ] `INDEX.md` row added per analysis
+- [x] `/ingest-listing <viewpoint-url>` produces a full
+      `evaluations/<slug>/` folder end-to-end *(skill shipped; validate
+      on real listings)*
+- [x] `/ingest-listing` with pasted text works even when the URL
+      fetch is blocked *(paste fallback in every adapter)*
+- [x] `criteria.md` is parsed and hard-filters actually reject
+      *(example shipped; TS parser + screener + agent logic all in place)*
+- [x] `INDEX.md` row added per analysis
 - [ ] At least one MODL and one HRM listing run successfully
-- [ ] Someone in Montreal could add `centris-ca.md` +
+      *(manual validation pass, not yet done)*
+- [x] Someone in Montreal could add `centris-ca.md` +
       `config/provinces/qc.md` without touching any existing code
+      *(adapter slot + municipal config slot wired up; content is the
+      contributor's job)*
 
 ---
 
@@ -598,3 +605,51 @@ status table in SPEC still marks `/ingest-listing` as not-built.
 
 Total: ~2–4 focused sessions for a solo developer. Parallelizable
 after Step 2 (Steps 3–7 are independent pure-function islands).
+
+---
+
+## Post-MVP notes
+
+Steps 0–7 shipped as originally planned — deterministic TS utilities
+landed under `src/utils/` with 67 vitest cases. Steps 8–11 simplified
+to markdown-only: three source adapters (`listings/sources/`) plus
+the orchestrating `.claude/skills/ingest-listing/SKILL.md`. The
+agent-test harness described in Steps 8–10 was deferred — LLM
+extraction prompts churn as they hit real listings, so snapshot tests
+written before real-world validation would lock in extractions that
+haven't been vetted yet. Revisit once the adapter prompts stabilize.
+
+---
+
+## Phase 3.1 — next (Mode B + Centris)
+
+The natural next targets once Mode A has real-world miles on it:
+
+### Scheduled discovery
+
+- `.claude/scheduled/scan-listings.md` — scheduled task definition
+- Configure source URLs per municipality (Viewpoint search result
+  pages, realtor.ca saved-search feeds)
+- Apply hard-filter to listing-list pages first (cheap) before
+  per-listing fetch
+- Full analysis only for passes
+- Writes daily digest to `digests/YYYY-MM-DD.md`
+- Notification:
+  - Email via SMTP or a GitHub Action
+  - Telegram via bot token in `.env`
+
+### Centris.ca + Québec
+
+- Flesh out `listings/sources/centris-ca.md` with French label map,
+  JSON-LD parsing, anti-bot detection
+- Create `config/provinces/qc.md` covering welcome tax (taxe de
+  bienvenue) tiers, TAL rental rules, Québec-specific CMHC nuances
+- Populate `config/municipalities/montreal.md` with borough-level
+  STR bylaws and zoning categories that matter for plex purchases
+
+### Nice-to-have
+
+- Photo download (`evaluations/<slug>/photos/`) option per open
+  question #2
+- Rerun-existing-listing diff view (open question #1)
+- Filter/sort views on `INDEX.md` (still just one file; tooling on top)

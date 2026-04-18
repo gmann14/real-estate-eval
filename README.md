@@ -40,24 +40,43 @@ cp config/owner-profile.example.md config/owner-profile.md
 
 `config/owner-profile.md` is gitignored — your personal financials stay local.
 
-### 3. Evaluate a property
+### 3. (Optional) Define your criteria
 
-Ask Claude something like:
+```bash
+cp config/criteria.example.md config/criteria.md
+# Edit hard filters (units, price cap, allowed municipalities, lot size)
+# and soft signals (ADU potential, upgrade paths, condition flags)
+```
 
-> Evaluate this property: https://www.realtor.ca/real-estate/...
+`config/criteria.md` is gitignored. When present, it pre-screens every
+ingest: listings that fail a hard filter are marked `reject` and skip
+the full analysis, so you don't burn tokens on properties that don't
+fit your mandate.
 
-or
+### 4. Ingest a listing
 
-> Evaluate 123 Main St, Halifax — asking $450K duplex, 2BR + 1BR, owner-occupy 2BR with smaller as Airbnb
+Ask Claude one of:
 
-The agent will:
+> /ingest-listing https://www.viewpoint.ca/property/12345
 
-1. Pull listing data (or prompt you to fill `templates/evaluation-template.md`)
-2. Gather comps (LTR rents, Airbnb ADR/occupancy), mortgage rates, assessment
-3. Confirm the assumptions with you
-4. Write a full `evaluations/<slug>/analysis.md`
-5. Write a property-specific `enhancements.md`
-6. Offer to draft a questions-for-realtor email
+> /ingest-listing
+> *(then paste the listing text when prompted)*
+
+> Evaluate 123 Main St, Halifax — asking $450K duplex, 2BR + 1BR
+
+The `ingest-listing` skill will:
+
+1. Route to the right source adapter (Viewpoint, realtor.ca, paste, …)
+2. Extract structured fields — address, price, units, year built, taxes,
+   description — into a draft `evaluations/<slug>/input.md`
+3. Check for an existing evaluation at that slug (collision: overwrite /
+   v2 / diff / skip)
+4. If `config/criteria.md` exists, pre-screen against your hard filters
+5. Load the matching municipal config (e.g. `modl.md`, `hrm.md`) so the
+   analysis picks up local tax and bylaw rules
+6. Show a summary and wait for your confirmation
+7. Delegate to `/evaluate-property` for the full analysis
+8. Append a row to `evaluations/INDEX.md` as a running watchlist
 
 ## What you get
 
@@ -110,21 +129,36 @@ real-estate-eval/
 ├── CONTRIBUTING.md                      # How to add provinces / contribute
 ├── .claude/
 │   └── skills/
-│       └── evaluate-property/
-│           └── SKILL.md                 # The workflow the agent follows
+│       ├── evaluate-property/           # Full analysis workflow
+│       │   └── SKILL.md
+│       └── ingest-listing/              # URL/paste → routed extraction → eval
+│           └── SKILL.md
 ├── templates/
 │   ├── evaluation-template.md           # Blank input
 │   ├── analysis-template.md             # Analysis report skeleton
 │   ├── enhancements-template.md         # ROI enhancement skeleton
 │   └── sheet-design-reference.md        # Google Sheet export reference
+├── listings/
+│   └── sources/                         # Source adapters (paste, viewpoint, realtor.ca, …)
 ├── config/
 │   ├── defaults.md                      # Generic default assumptions
 │   ├── cmhc-premiums.md                 # CMHC rules + premium tables
+│   ├── criteria.example.md              # Copy to criteria.md (gitignored) to pre-screen
 │   ├── owner-profile.example.md         # Copy to owner-profile.md (gitignored)
+│   ├── municipalities/
+│   │   ├── modl.md                      # Lunenburg south-shore cluster
+│   │   ├── hrm.md                       # Halifax Regional Municipality
+│   │   └── montreal.md                  # Placeholder (Phase 3.1)
 │   └── provinces/
 │       └── ns.md                        # Nova Scotia defaults + rules
+├── src/
+│   └── utils/                           # Deterministic TS helpers (slug, validate,
+│                                        # criteria, screen, index-md, collision, municipal)
+├── docs/
+│   └── phase-3-plan.md                  # Ingestion pipeline design + TDD plan
 └── evaluations/
     ├── README.md                        # Folder conventions
+    ├── INDEX.md                         # Watchlist (created on first ingest; gitignored)
     └── <property-slug>/                 # One per property (gitignored)
         ├── input.md
         ├── analysis.md
@@ -138,9 +172,10 @@ real-estate-eval/
   `config/provinces/<code>.md` — see `CONTRIBUTING.md`.
 - **Property types:** single-family, duplex, triplex, fourplex, mixed-use,
   condo. Scenarios are tuned for owner-occupy + 1 rental unit setups.
-- **Listings sources:** realtor.ca, viewpoint.ca (NS), centris.ca (QC),
-  manual input. The agent fetches with WebFetch — falls back to manual if
-  blocked.
+- **Listings sources:** viewpoint.ca (NS, primary), realtor.ca
+  (Canada-wide, best-effort — falls back to paste on anti-bot blocks),
+  centris.ca (QC, placeholder — routes to paste for now), raw paste
+  (always works). See `listings/sources/`.
 - **Financing:** Canadian semi-annual mortgage compounding, CMHC premiums up
   to $1.5M insurable cap, 5% / 10% / 20% down modeled, investment minimum
   20% for non-owner-occupied.
@@ -149,10 +184,16 @@ real-estate-eval/
 
 ## Roadmap
 
-Phase 2: Replace the AI for financial math with a deterministic TypeScript
-engine + unit tests. Phase 3: personal-use features (watchlist,
-comparisons, offer aid, post-close actuals tracker). See `SPEC.md` for
-the full vision and `CONTRIBUTING.md` to help.
+- **Phase 3 · Mode A (shipped):** `/ingest-listing` skill + source
+  adapters + criteria pre-screen + INDEX.md watchlist.
+  See [docs/phase-3-plan.md](docs/phase-3-plan.md).
+- **Phase 3.1 — next:** scheduled discovery ("Mode B") — daily scan of
+  configured sources, criteria filter, auto-analyze matches, email /
+  Telegram digest. Also Centris.ca (QC) adapter + `config/provinces/qc.md`.
+- **Phase 2:** replace the AI for financial math with a deterministic
+  TypeScript engine + unit tests (foundation already in `src/utils/`).
+
+See `SPEC.md` for the full vision and `CONTRIBUTING.md` to help.
 
 ## Not financial advice
 
