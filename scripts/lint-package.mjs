@@ -26,7 +26,7 @@ const requiredCompilerOptions = {
   forceConsistentCasingInFileNames: true,
   skipLibCheck: true,
 };
-const requiredIncludes = ["scripts/**/*.mjs", "tests/**/*.test.mjs"];
+const requiredIncludes = ["vitest.config.ts", "scripts/**/*.mjs", "tests/**/*.test.mjs"];
 
 for (const dependency of requiredDependencies) {
   if (!packageJson.dependencies?.[dependency]) {

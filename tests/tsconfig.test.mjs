@@ -23,6 +23,7 @@ test("tsconfig.json enables explicit strict compiler options", () => {
 });
 
 test("tsconfig.json includes scripts and test files for checking", () => {
+  assert.ok(tsconfig.include?.includes("vitest.config.ts"));
   assert.ok(tsconfig.include?.includes("scripts/**/*.mjs"));
   assert.ok(tsconfig.include?.includes("tests/**/*.test.mjs"));
 });

@@ -17,6 +17,7 @@
     "skipLibCheck": true
   },
   "include": [
+    "vitest.config.ts",
     "scripts/**/*.mjs",
     "tests/**/*.test.mjs"
   ]
