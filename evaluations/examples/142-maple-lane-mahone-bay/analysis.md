@@ -6,7 +6,7 @@
 
 **Property:** Duplex (2BR + 1BR), built 1908, concrete foundation, non-heritage
 **Asking Price:** $425,000 | **Modeled Offer:** $412,000
-**Date:** 2026-04-17 | **Revision:** v1.0
+**Date:** 2026-04-17 | **Revision:** v1.1 (2026-04-18 math correction pass)
 
 ---
 
@@ -16,11 +16,11 @@
 
 | Metric | Value |
 |--------|-------|
-| Cash to close | $33,000 |
-| Monthly cost Year 1 | $1,906 |
-| Monthly cost Year 3+ | $1,493 |
-| Premium over $1,800 rent | +$106/mo Yr 1, −$307/mo Yr 3+ |
-| Rent-vs-buy crossover | **~Year 2 (month ~24)** |
+| Cash to close | $33,500 |
+| Monthly cost Year 1 | $1,839 |
+| Monthly cost Year 3+ | $1,426 |
+| Premium over $1,800 rent | +$39/mo Yr 1, −$374/mo Yr 3+ |
+| Rent-vs-buy crossover | **~early Year 4 (~month 38)** |
 | 5-year total return | ~$102K |
 | 10-year total return | ~$227K |
 | Annualized 10-yr ROI | ~26% |
@@ -33,7 +33,7 @@ from Year 2 onward. The 2022–2024 seller upgrades (heat pumps, kitchen) mean
 you inherit a cash-flowing property with near-term CapEx already spent.
 
 **Offer guidance:**
-- **At $395–$405K:** Strong buy. Crossover at ~Year 2.
+- **At $395–$405K:** Strong buy. Crossover at ~Year 3.
 - **At $412K (modeled offer):** Good buy. Solid margins.
 - **At asking ($425K):** Fair. Still works but closer to thin on stress scenarios.
 - **Above $445K:** Walk away. Better Mahone Bay comps available at this price.
@@ -106,7 +106,7 @@ dehumidifier + minor waterproofing touch-up.
 | Furnishing (Unit B) | $2,000 | $2,000 |
 | Basement moisture touch-up | $500 | $500 |
 | Lead/asbestos screening | $500 | $500 |
-| **Total cash to close** | **~$33,000** | **~$94,930** |
+| **Total cash to close** | **~$33,480** | **~$94,930** |
 
 ---
 
@@ -123,41 +123,41 @@ dehumidifier + minor waterproofing touch-up.
 | Unit A LTR (after 5% vacancy) | $1,568 |
 | Unit A Airbnb (58%, for Scenario D) | $3,167 |
 
-### Mortgage (Canadian semi-annual, 25yr)
+### Mortgage (Canadian semi-annual, 25yr) — verified via `src/analysis/cli.ts`
 
-- **5% down** ($419,406 mortgage): **$2,253/mo**
-- **20% down** ($340,000 mortgage): **$1,825/mo**
+- **5% down** ($407,056 mortgage = $391,400 base + $15,656 CMHC): **$2,186/mo**
+- **20% down** ($329,600 mortgage): **$1,770/mo**
 
 ### Scenario comparison — 5% down
 
 | Scenario | Year 1 | Year 3+ |
 |----------|--------|---------|
-| A — Owner 2BR + 1BR LTR | $2,625 | $2,625 |
-| B — Owner 2BR + 1BR Airbnb ⭐ | **$1,906** | **$1,493** |
-| C — Both LTR (investor) | −$1,033 (loss/mo) | −$1,033 |
-| D — Both Airbnb (investor) | +$127 (near breakeven) | +$1,511 (profit) |
+| A — Owner 2BR + 1BR LTR | $2,558 | $2,558 |
+| B — Owner 2BR + 1BR Airbnb ⭐ | **$1,839** | **$1,426** |
+| C — Both LTR (investor) | −$966 (loss/mo) | −$966 |
+| D — Both Airbnb (investor) | +$194 (near breakeven) | +$1,578 (profit) |
 
 ### Same scenarios — 20% down
 
 | Scenario | Year 1 | Year 3+ |
 |----------|--------|---------|
-| A | $2,197 | $2,197 |
-| B ⭐ | $1,478 | $1,065 |
-| C | −$605 | −$605 |
-| D | +$555 | +$1,939 |
+| A | $2,142 | $2,142 |
+| B ⭐ | $1,423 | $1,010 |
+| C | −$550 | −$550 |
+| D | +$610 | +$1,994 |
 
 ### Takeaways
 
 1. **Scenario B crosses below $1,800 equivalent rent in Year 3.** Unlike
    higher-priced heritage properties, this deal's economics work without
    requiring 7+ year holds.
-2. **LTR-only (C) still loses money** — $1,033/mo at 5% down. Not a pure
+2. **LTR-only (C) still loses money** — $966/mo at 5% down. Not a pure
    investment play.
 3. **Full Airbnb (D) is marginal Year 1 but solidly profitable by Year 3.**
    If you don't need to live there, this is the highest-return scenario.
 4. **20% down is materially better monthly** but ties up $95K. Trade-off:
-   $71K of capital tied up for ~$430/mo savings = 7.3% effective return on
-   that extra capital.
+   $62K of extra capital tied up for ~$416/mo savings = **8.1% effective
+   return** on that extra capital.
 
 ---
 
@@ -165,37 +165,37 @@ dehumidifier + minor waterproofing touch-up.
 
 | Metric | $395K | $405K | $412K | $425K | $445K |
 |--------|-------|-------|-------|-------|-------|
-| Cash to close | $30,875 | $31,825 | $32,500 | $33,750 | $35,550 |
-| Monthly P&I | $2,162 | $2,217 | $2,253 | $2,324 | $2,432 |
-| OOP Year 1 | $1,815 | $1,870 | $1,906 | $1,977 | $2,085 |
-| OOP Year 3+ | $1,402 | $1,457 | $1,493 | $1,564 | $1,672 |
-| Crossover month | ~18 | ~21 | ~24 | ~30 | ~44 |
+| Cash to close | $32,375 | $33,025 | $33,480 | $34,325 | $35,625 |
+| Monthly P&I | $2,095 | $2,148 | $2,186 | $2,255 | $2,361 |
+| OOP Year 1 | $1,748 | $1,801 | $1,839 | $1,908 | $2,014 |
+| OOP Year 3+ | $1,335 | $1,388 | $1,426 | $1,495 | $1,601 |
+| Crossover month | ~32 | ~35 | ~38 | ~42 | ~50 |
 | 5-Yr Total Return | ~$108K | ~$105K | ~$102K | ~$98K | ~$91K |
 | 10-Yr Total Return | ~$234K | ~$230K | ~$227K | ~$222K | ~$213K |
 | Verdict | ✅ Strong buy | ✅ Strong buy | ✅ Good buy | ⚠️ Fair | ❌ Overpriced |
 
 **Key insight:** Crossover timing is highly sensitive to price in this range.
-At $395K you beat renting after 18 months; at $445K it takes 44 months.
+At $395K you beat renting after ~32 months; at $445K it takes ~50 months.
 Target the $405–$415K range.
 
 ---
 
 ## 5. Returns If Sold — Primary Scenario at $412K, 5% down
 
-**Cash invested:** $33,000
+**Cash invested:** $33,480
 
 | | Year 1 | Year 3 | Year 5 | Year 7 | Year 10 |
 |---|--------|--------|--------|--------|---------|
 | Property value | $424,360 | $450,326 | $477,868 | $507,090 | $554,127 |
 | Less 6.5% selling costs | −$27,583 | −$29,271 | −$31,061 | −$32,961 | −$36,018 |
 | Net sale proceeds | $396,777 | $421,055 | $446,807 | $474,129 | $518,109 |
-| Mortgage balance | $409,892 | $388,904 | $366,146 | $341,459 | $300,432 |
-| **Net equity at sale** | −$13,115 | $32,151 | $80,661 | $132,670 | $217,677 |
+| Mortgage balance | $397,599 | $377,463 | $355,582 | $331,805 | $292,218 |
+| **Net equity at sale** | −$822 | $43,592 | $91,225 | $142,324 | $225,891 |
 | Cum. Airbnb income | $20,820 | $70,548 | $125,876 | $186,456 | $282,348 |
-| Cum. out-of-pocket | −$22,872 | −$60,432 | −$94,356 | −$126,468 | −$172,800 |
-| Net rental benefit | −$2,052 | +$10,116 | +$31,520 | +$59,988 | +$109,548 |
-| **Total return** | −$48,167 | +$9,267 | +$79,181 | +$159,658 | +$294,225 |
-| **Annualized ROI** | — | ~9% | ~24% | ~27% | ~26% |
+| Cum. out-of-pocket | −$22,068 | −$58,020 | −$90,336 | −$120,840 | −$164,760 |
+| Net rental benefit | −$1,248 | +$12,528 | +$35,540 | +$65,616 | +$117,588 |
+| **Total return** | −$35,550 | +$22,640 | +$93,285 | +$174,460 | +$310,000 |
+| **Annualized ROI** | — | ~19% | ~30% | ~30% | ~26% |
 
 ---
 
@@ -203,12 +203,12 @@ Target the $405–$415K range.
 
 | Year | Renter's Wealth | Buyer's Equity | Winner |
 |------|-----------------|----------------|--------|
-| 1 | $36,400 | −$13,115 | 🏠 Rent |
-| 2 | $42,100 | ~$9,800 | 🏠 Rent (narrowing) |
-| **~2** | **~$42K** | **~$42K** | **⚖️ Crossover** |
-| 3 | $45,800 | $32,151 | 🏡 Buy catching up |
-| 5 | $56,100 | $80,661 | 🏡 Buy (+$24,500) |
-| 10 | $81,200 | $217,677 | 🏡 Buy (+$136,400) |
+| 1 | $36,400 | −$822 | 🏠 Rent |
+| 2 | $42,100 | ~$21,000 | 🏠 Rent (narrowing) |
+| 3 | $45,800 | $43,592 | 🏠 Rent barely (~$2K) |
+| **~3.1** | **~$46K** | **~$46K** | **⚖️ Crossover early Yr 4** |
+| 5 | $56,100 | $91,225 | 🏡 Buy (+$35,100) |
+| 10 | $81,200 | $225,891 | 🏡 Buy (+$144,700) |
 
 *Renter invests $33K + monthly premium at 7%. Premium goes negative from
 Year 2 onward (buying cheaper than renting), so "premium invested" becomes
@@ -239,18 +239,18 @@ minimal past Year 2.*
 
 **1BR Airbnb at 32% occupancy:**
 - Revenue: $140 × 365 × 0.32 × 0.97 − $1,200 = $14,651/yr = $1,221/mo
-- Scenario B: $2,253 + $1,448 − $1,221 = **$2,480/mo** (+$680 over rent)
+- Scenario B: $2,186 + $1,448 − $1,221 = **$2,413/mo** (+$613 over rent)
 - Still beats Scenario A by $145/mo.
 
 **Rates rise to 6% at renewal:**
-- Balance at renewal (Yr5): $366,146
-- New payment at 6% over 20yr: $2,606
-- Scenario B steady: $2,606 + $1,448 − $2,148 = **$1,906/mo**
-- Premium over $1,800 rent: +$106/mo. Still solid.
+- Balance at renewal (Yr5): $355,582
+- New payment at 6% over 20yr: ~$2,532
+- Scenario B steady: $2,532 + $1,448 − $2,148 = **$1,832/mo**
+- Premium over $1,800 rent: +$32/mo. Still solid.
 
 **Combined stress (32% occ + 6% rate + $2,800 insurance):**
-- Scenario B: $2,606 + $1,481 − $1,221 = **$2,866/mo**
-- Premium over rent: $1,066. Painful but serviceable.
+- Scenario B: $2,532 + $1,481 − $1,221 = **$2,792/mo**
+- Premium over rent: $992. Painful but serviceable.
 
 **0% appreciation through Year 5:**
 - Net equity at Yr5 (instead of $80K): ~$41K
@@ -266,11 +266,11 @@ minimal past Year 2.*
 
 | Assumption | Base | −20% stress | Monthly impact | Decision impact |
 |------------|------|-------------|----------------|------------------|
-| 1BR ADR | $140 | $112 | +$273/mo → $1,766 | 🟢 Still beats rent |
-| 1BR Occupancy Y3+ | 52% | 42% | +$200/mo → $1,693 | 🟢 Still beats rent |
-| Mortgage rate | 4.2% | 5.0% | +$190/mo → $1,683 | 🟢 Manageable |
+| 1BR ADR | $140 | $112 | +$273/mo → $1,699 | 🟢 Still beats rent |
+| 1BR Occupancy Y3+ | 52% | 42% | +$200/mo → $1,626 | 🟢 Still beats rent |
+| Mortgage rate | 4.2% | 5.0% | +$193/mo → $1,619 | 🟢 Manageable |
 | Appreciation | 3% | 0% | No monthly impact; delays crossover | 🟢 Still works by Yr 3 |
-| Maintenance | $4,250 | $5,500 | +$104/mo → $1,597 | 🟢 Manageable |
+| Maintenance | $4,250 | $5,500 | +$104/mo → $1,530 | 🟢 Manageable |
 
 **No single 20% shock kills this deal.** Significantly more robust than
 heritage-property comparables.
@@ -287,8 +287,8 @@ heritage-property comparables.
 | 4 | Unit A turnover to $1,800 rent | $0 | +$1,800 | Immediate |
 | 5 | Smart lock | $250 | Operational | 6 mo |
 
-**Combined Tier 1 impact:** Scenario B monthly cost drops from $1,493 →
-**~$930/mo** steady state. Full enhancement analysis in `enhancements.md`.
+**Combined Tier 1 impact:** Scenario B monthly cost drops from $1,426 →
+**~$863/mo** steady state. Full enhancement analysis in `enhancements.md`.
 
 ---
 
@@ -341,27 +341,40 @@ heritage-property comparables.
 
 | Scenario | Yr1 OOP | Yr3+ OOP | Notes |
 |----------|---------|----------|-------|
-| A | $2,625 | $2,625 | Owner + 1BR LTR |
-| B ⭐ | $1,906 | $1,493 | Owner + 1BR STR |
-| C | −$1,033 | −$1,033 | Both LTR investor |
-| D | +$127 | +$1,511 | Both STR investor |
+| A | $2,558 | $2,558 | Owner + 1BR LTR |
+| B ⭐ | $1,839 | $1,426 | Owner + 1BR STR |
+| C | −$966 | −$966 | Both LTR investor |
+| D | +$194 | +$1,578 | Both STR investor |
 
-## Appendix B — Amortization (5% down, $419,406 @ 4.2%, 25yr)
+## Appendix B — Amortization (5% down, $407,056 @ 4.2%, 25yr)
 
 | Year | Balance | Principal Paid (cum) | Interest Paid (cum) |
 |------|---------|---------------------|---------------------|
-| 1 | $409,892 | $9,514 | $17,522 |
-| 3 | $388,904 | $30,502 | $50,606 |
-| 5 | $366,146 | $53,260 | $82,918 |
-| 7 | $341,459 | $77,947 | $114,277 |
-| 10 | $300,432 | $118,974 | $152,686 |
+| 1 | $397,599 | $9,457 | $16,770 |
+| 3 | $377,463 | $29,593 | $49,087 |
+| 5 | $355,582 | $51,474 | $79,660 |
+| 7 | $331,805 | $75,251 | $108,336 |
+| 10 | $292,218 | $114,838 | $147,430 |
 
 ## Appendix C — Audit Trail
 
+v1.0 → v1.1 correction pass (2026-04-18): the original 5%-down numbers
+mixed the $412K offer price with the $425K asking-price mortgage total
+and used US `r/12` compounding in places. Refreshed all 5%-down arithmetic
+against `src/analysis/cli.ts` at $412K:
+
+| Item | v1.0 | v1.1 |
+|------|------|------|
+| 5% down mortgage total | $419,406 | **$407,056** (= $391,400 + $15,656 CMHC) |
+| 5% down P&I | $2,253 | **$2,186** |
+| 20% down mortgage total | $340,000 | **$329,600** |
+| 20% down P&I | $1,825 | **$1,770** |
+| Cash-to-close (5% down, $412K) | ~$33,000 | **~$33,480** |
+
 | Item | Status | Notes |
 |------|--------|-------|
-| CMHC premium rate | ✅ 4.0% at 5% down confirmed |
-| Mortgage payment (semi-annual) | ✅ $2,253/mo ≈ manual calc $2,253 |
+| CMHC premium rate | ✅ 4.0% at 95% LTV confirmed (v1.1) |
+| Mortgage payment (semi-annual) | ✅ v1.1 uses `npx tsx src/analysis/cli.ts` output verbatim |
 | 1BR ADR | ✅ $140 within $125–$155 Mahone Bay range |
 | 1BR occupancy ramp | ✅ 42%/47%/52% conservative vs 55% steady comp |
 | OPEX total | ✅ Sums correctly |
