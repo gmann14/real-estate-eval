@@ -1,16 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  calculateClosingCosts,
-  cmhcPremium,
-  generateFinancingScenarios,
-  monthlyPayment,
-} from "../src/analysis/financing.ts";
-import { monthlyPayment as monthlyPaymentFromIndex } from "../src/analysis/index.ts";
+import * as analysis from "../src/analysis/index.ts";
+import { calculateClosingCosts, cmhcPremium, generateFinancingScenarios, monthlyPayment } from "../src/analysis/financing.ts";
 import { generateFinancingScenarios as generateFromScenarioModule } from "../src/analysis/scenarios.ts";
 
 test("monthlyPayment uses the Canadian semi-annual compounding formula for the Prince Street fixture", () => {
+  const principal = 479180;
+  const annualRate = 0.042;
+  const totalMonths = 25 * 12;
+  const monthlyRate = Math.pow(1 + annualRate / 2, 1 / 6) - 1;
+  const growthFactor = Math.pow(1 + monthlyRate, totalMonths);
+  const expectedPayment = Math.round((principal * monthlyRate * growthFactor) / (growthFactor - 1));
+
+  assert.equal(expectedPayment, 2573);
   assert.equal(monthlyPayment(479180, 0.042, 5, 25), 2573);
 });
 
@@ -22,7 +25,15 @@ test("cmhcPremium calculates the premium for a 5% down insured mortgage", () => 
   assert.equal(cmhcPremium(500000, 5), 19000);
 });
 
-test("cmhcPremium calculates the premium using the split minimum down payment above $500K", () => {
+test("cmhcPremium applies the 3.1% premium band for a 10% down insured mortgage", () => {
+  assert.equal(cmhcPremium(500000, 10), 13950);
+});
+
+test("cmhcPremium applies the 2.8% premium band for a 15% down insured mortgage", () => {
+  assert.equal(cmhcPremium(500000, 15), 11900);
+});
+
+test("cmhcPremium uses the statutory split minimum down payment above $500K", () => {
   assert.equal(cmhcPremium(750000, 5), 28000);
 });
 
@@ -93,7 +104,16 @@ test("generateFinancingScenarios returns the four required scenarios for the mod
   );
 });
 
-test("scenario exports are available from the scenario module and analysis index", () => {
+test("analysis index re-exports the financing API", () => {
+  assert.deepEqual(Object.keys(analysis).sort(), [
+    "calculateClosingCosts",
+    "cmhcPremium",
+    "generateFinancingScenarios",
+    "monthlyPayment",
+  ]);
+  assert.equal(analysis.monthlyPayment(479180, 0.042, 5, 25), 2573);
+});
+
+test("scenario exports are available from the scenario module", () => {
   assert.deepEqual(generateFromScenarioModule(485000), generateFinancingScenarios(485000));
-  assert.equal(monthlyPaymentFromIndex(479180, 0.042, 5, 25), 2573);
 });

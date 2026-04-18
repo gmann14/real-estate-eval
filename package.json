@@ -4,8 +4,9 @@
   "type": "module",
   "packageManager": "pnpm@10.28.2",
   "scripts": {
-    "lint": "deno check --no-config src/analysis/financing.ts src/analysis/index.ts src/analysis/scenarios.ts tests/financing.test.ts",
-    "test": "node --test"
+    "lint": "deno lint src tests",
+    "test": "node --test tests/financing.test.ts",
+    "typecheck": "deno check --no-config src/analysis/financing.ts src/analysis/index.ts src/analysis/scenarios.ts tests/financing.test.ts"
   },
   "devDependencies": {
     "@types/node": "^24.7.2",

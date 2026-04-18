@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 
 interface CmhcPremiumBand {
   ltv_min: number;
@@ -82,12 +83,26 @@ const DEFAULT_TERM_YEARS = 5;
 const DEFAULT_AMORTIZATION_YEARS = 25;
 const DEFAULT_ANNUAL_RATE = 0.042;
 const DEFAULT_PROVINCE = "ns";
+const require = createRequire(import.meta.url);
+
+let yamlParse: ((source: string) => unknown) | undefined;
+
+try {
+  const yamlModule = require("yaml") as { parse?: (source: string) => unknown };
+  yamlParse = yamlModule.parse;
+} catch {
+  yamlParse = undefined;
+}
 
 let cachedCmhcConfig: CmhcConfig | undefined;
 const provinceConfigCache = new Map<string, ProvinceConfig>();
 
 function readYamlFile<T>(relativePath: string): T {
   const source = readFileSync(new URL(relativePath, import.meta.url), "utf8");
+  if (yamlParse) {
+    return yamlParse(source) as T;
+  }
+
   return JSON.parse(source) as T;
 }
 
