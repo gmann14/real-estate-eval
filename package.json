@@ -2,19 +2,9 @@
   "name": "real-estate-eval",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.28.2",
   "scripts": {
     "lint": "node scripts/lint-package.mjs",
-    "test": "node --test",
-    "test:vitest": "vitest run",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "yaml": "latest"
-  },
-  "devDependencies": {
-    "@types/node": "latest",
-    "ts-node": "latest",
-    "typescript": "latest",
-    "vitest": "latest"
+    "test": "node --test"
   }
 }
