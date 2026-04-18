@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import * as analysis from "../src/analysis/index.ts";
@@ -123,4 +124,16 @@ test("analysis index re-exports the financing API", () => {
 
 test("scenario exports are available from the scenario module", () => {
   assert.deepEqual(generateFromScenarioModule(485000), generateFinancingScenarios(485000));
+});
+
+test("tsconfig allows explicit TypeScript import specifiers for NodeNext modules", () => {
+  const tsconfig = JSON.parse(
+    readFileSync(new URL("../tsconfig.json", import.meta.url), "utf8"),
+  ) as {
+    compilerOptions?: {
+      allowImportingTsExtensions?: boolean;
+    };
+  };
+
+  assert.equal(tsconfig.compilerOptions?.allowImportingTsExtensions, true);
 });
