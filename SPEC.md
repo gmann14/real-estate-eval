@@ -26,12 +26,12 @@ quality but relies on the agent (not compiled code) for financial math.
 | Default assumptions | ✅ `config/defaults.md` | same |
 | Owner profile | ✅ example + gitignored personal | same |
 | Agent workflow | ✅ `.claude/skills/evaluate-property/SKILL.md` | same + calls deterministic engine |
-| Ingestion skill | ✅ `.claude/skills/ingest-listing/SKILL.md` (Mode A — paste/URL) | + Mode B scheduled scan |
-| Source adapters | ✅ paste, viewpoint, realtor.ca (`listings/sources/`) | + centris.ca full |
-| Criteria pre-screen | ✅ `config/criteria.example.md` + agent logic | + TS `src/utils/criteria.ts` already in place |
-| Deterministic helpers | 🟡 `src/utils/` (slug, validate, criteria, screen, index-md, collision, municipal) with vitest | + financial engine |
+| Ingestion skill | ❌ designed in `docs/phase-3-plan.md`; not yet built | Mode A (paste/URL) then Mode B (scheduled scan) |
+| Source adapters | ❌ not built (`listings/sources/*.md` planned) | paste, viewpoint, realtor.ca, centris |
+| Criteria pre-screen | 🟡 example + TS parser/screener in `src/utils/` with vitest; not wired into an agent flow yet | Skill reads `criteria.md`, calls screener, routes reject→light→full |
+| Deterministic helpers | 🟡 `src/utils/` (slug, validate, criteria, screen, index-md, collision, municipal) with 67 vitest cases | + financial engine |
 | Municipal configs | 🟡 MODL + HRM (NS); Montreal placeholder | + ON/BC/AB + per-borough QC |
-| Watchlist | ✅ `evaluations/INDEX.md` auto-appended per ingest | + filter/sort views |
+| Watchlist | 🟡 `index-md` TS appender shipped with vitest; no agent writes to `evaluations/INDEX.md` yet | Skill appends on every analysis; filter/sort views later |
 | Financial math | ❌ done by agent | TypeScript engine with unit tests (`src/analysis/*`) |
 | Google Sheets export | ❌ not built | TypeScript module (`src/output/google-sheets.ts`) |
 | Telegram TL;DR | ❌ not built | TypeScript module (`src/output/telegram.ts`) |

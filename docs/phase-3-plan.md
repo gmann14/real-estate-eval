@@ -1,8 +1,10 @@
 # Phase 3 Plan — Listing Ingestion & Auto-Analysis
 
-> **Status:** Mode A MVP shipped (April 2026). Mode B (scheduled
-> discovery) is the next Phase 3.1 target — see the sketch at the
-> bottom of this file.
+> **Status:** Steps 0–7 shipped (deterministic TS utilities under
+> `src/utils/` with 67 vitest cases, plus example criteria + MODL/HRM
+> municipal configs). Steps 8–11 (source adapters + `/ingest-listing`
+> skill) still to build — see "Post-MVP notes" and success criteria
+> below. Mode B (scheduled discovery) comes after Mode A lands.
 
 ## Goal
 
@@ -219,20 +221,19 @@ Mode A skill is callable from one eventually.
 
 ## Success criteria for Phase 3
 
-- [x] `/ingest-listing <viewpoint-url>` produces a full
-      `evaluations/<slug>/` folder end-to-end *(skill shipped; validate
-      on real listings)*
-- [x] `/ingest-listing` with pasted text works even when the URL
-      fetch is blocked *(paste fallback in every adapter)*
+- [ ] `/ingest-listing <viewpoint-url>` produces a full
+      `evaluations/<slug>/` folder end-to-end
+- [ ] `/ingest-listing` with pasted text works even when the URL
+      fetch is blocked
 - [x] `criteria.md` is parsed and hard-filters actually reject
-      *(example shipped; TS parser + screener + agent logic all in place)*
-- [x] `INDEX.md` row added per analysis
+      *(parser `src/utils/criteria.ts` + screener `src/utils/screen.ts`
+      shipped with vitest; still need skill wiring to call them)*
+- [x] `INDEX.md` appender shipped as `src/utils/index-md.ts` with
+      vitest *(skill wiring pending)*
 - [ ] At least one MODL and one HRM listing run successfully
-      *(manual validation pass, not yet done)*
-- [x] Someone in Montreal could add `centris-ca.md` +
+- [ ] Someone in Montreal could add `centris-ca.md` +
       `config/provinces/qc.md` without touching any existing code
-      *(adapter slot + municipal config slot wired up; content is the
-      contributor's job)*
+      *(municipal config slot shipped; adapter slot still to build)*
 
 ---
 
@@ -608,20 +609,42 @@ after Step 2 (Steps 3–7 are independent pure-function islands).
 
 ---
 
-## Post-MVP notes
+## Shipping log
 
 Steps 0–7 shipped as originally planned — deterministic TS utilities
-landed under `src/utils/` with 67 vitest cases. Steps 8–11 simplified
-to markdown-only: three source adapters (`listings/sources/`) plus
-the orchestrating `.claude/skills/ingest-listing/SKILL.md`. The
-agent-test harness described in Steps 8–10 was deferred — LLM
-extraction prompts churn as they hit real listings, so snapshot tests
+landed under `src/utils/` with 67 vitest cases, plus the example
+criteria file and MODL/HRM/Montreal municipal configs.
+
+Steps 8–11 are **next up** and will simplify from the plan above:
+skip the agent-test harness, ship the three source adapters as
+prompt files (`listings/sources/*.md`) plus an orchestrating
+`.claude/skills/ingest-listing/SKILL.md`, and validate by eye on
+real listings rather than with golden-file snapshots. Rationale:
+LLM extraction prompts churn as they hit real listings, so snapshots
 written before real-world validation would lock in extractions that
-haven't been vetted yet. Revisit once the adapter prompts stabilize.
+haven't been vetted yet. Revisit test harness once the adapter
+prompts stabilize.
+
+The viewpoint adapter needs two real-world findings baked in:
+
+- **URL architecture:** short URLs like `viewpoint.ca/<code>` redirect
+  to `/map#<base64-json>` which is a JS-rendered SPA (no useful
+  server-side HTML). The canonical pattern
+  `viewpoint.ca/property/<pid>` redirects to
+  `/cutsheet/<listing_id>/1/<slug>` which IS server-rendered.
+  Prefer the cutsheet URL for WebFetch.
+- **Hallucination risk:** fields like `year_built`, `annual_taxes`,
+  `heating`, `foundation` are present in cutsheet HTML only as
+  unresolved handlebars templates (`{{ entry.year_built || 'N/A' }}`)
+  — they load client-side via JS. The adapter MUST mark these
+  `unknown` and `[PROMPT USER]` rather than letting the LLM infer
+  them from description text. The price, address, beds/baths, living
+  area, listing_id, and full remarks (via `application/ld+json`) are
+  reliably extractable.
 
 ---
 
-## Phase 3.1 — next (Mode B + Centris)
+## Phase 3.1 — after Mode A lands (Mode B + Centris)
 
 The natural next targets once Mode A has real-world miles on it:
 

@@ -48,35 +48,33 @@ cp config/criteria.example.md config/criteria.md
 # and soft signals (ADU potential, upgrade paths, condition flags)
 ```
 
-`config/criteria.md` is gitignored. When present, it pre-screens every
-ingest: listings that fail a hard filter are marked `reject` and skip
-the full analysis, so you don't burn tokens on properties that don't
-fit your mandate.
+`config/criteria.md` is gitignored. A parser and screener live in
+`src/utils/` with vitest coverage — the orchestrating `/ingest-listing`
+skill that calls them end-to-end is the next step (see Roadmap).
 
-### 4. Ingest a listing
+### 4. Evaluate a property
 
 Ask Claude one of:
 
-> /ingest-listing https://www.viewpoint.ca/property/12345
+> Evaluate this property: https://www.realtor.ca/real-estate/...
 
-> /ingest-listing
-> *(then paste the listing text when prompted)*
+> Evaluate 123 Main St, Halifax — asking $450K duplex, 2BR + 1BR,
+> owner-occupy 2BR with smaller as Airbnb
 
-> Evaluate 123 Main St, Halifax — asking $450K duplex, 2BR + 1BR
+The agent (`.claude/skills/evaluate-property/SKILL.md`) will:
 
-The `ingest-listing` skill will:
+1. Fetch the listing (or prompt you to fill `templates/evaluation-template.md`)
+2. Gather comps (LTR rents, Airbnb ADR/occupancy), mortgage rates, assessment
+3. Confirm assumptions with you
+4. Write a full `evaluations/<slug>/analysis.md`
+5. Write a property-specific `enhancements.md`
+6. Offer to draft a questions-for-realtor email
 
-1. Route to the right source adapter (Viewpoint, realtor.ca, paste, …)
-2. Extract structured fields — address, price, units, year built, taxes,
-   description — into a draft `evaluations/<slug>/input.md`
-3. Check for an existing evaluation at that slug (collision: overwrite /
-   v2 / diff / skip)
-4. If `config/criteria.md` exists, pre-screen against your hard filters
-5. Load the matching municipal config (e.g. `modl.md`, `hrm.md`) so the
-   analysis picks up local tax and bylaw rules
-6. Show a summary and wait for your confirmation
-7. Delegate to `/evaluate-property` for the full analysis
-8. Append a row to `evaluations/INDEX.md` as a running watchlist
+> **Coming soon:** a `/ingest-listing` skill that wraps this with
+> URL-aware source adapters, the criteria screener, and an auto-appended
+> watchlist at `evaluations/INDEX.md`. See
+> [docs/phase-3-plan.md](docs/phase-3-plan.md) for the design and
+> [Roadmap](#roadmap) below for shipping status.
 
 ## What you get
 
@@ -129,17 +127,13 @@ real-estate-eval/
 ├── CONTRIBUTING.md                      # How to add provinces / contribute
 ├── .claude/
 │   └── skills/
-│       ├── evaluate-property/           # Full analysis workflow
-│       │   └── SKILL.md
-│       └── ingest-listing/              # URL/paste → routed extraction → eval
+│       └── evaluate-property/           # Full analysis workflow
 │           └── SKILL.md
 ├── templates/
 │   ├── evaluation-template.md           # Blank input
 │   ├── analysis-template.md             # Analysis report skeleton
 │   ├── enhancements-template.md         # ROI enhancement skeleton
 │   └── sheet-design-reference.md        # Google Sheet export reference
-├── listings/
-│   └── sources/                         # Source adapters (paste, viewpoint, realtor.ca, …)
 ├── config/
 │   ├── defaults.md                      # Generic default assumptions
 │   ├── cmhc-premiums.md                 # CMHC rules + premium tables
@@ -158,7 +152,6 @@ real-estate-eval/
 │   └── phase-3-plan.md                  # Ingestion pipeline design + TDD plan
 └── evaluations/
     ├── README.md                        # Folder conventions
-    ├── INDEX.md                         # Watchlist (created on first ingest; gitignored)
     └── <property-slug>/                 # One per property (gitignored)
         ├── input.md
         ├── analysis.md
@@ -172,10 +165,12 @@ real-estate-eval/
   `config/provinces/<code>.md` — see `CONTRIBUTING.md`.
 - **Property types:** single-family, duplex, triplex, fourplex, mixed-use,
   condo. Scenarios are tuned for owner-occupy + 1 rental unit setups.
-- **Listings sources:** viewpoint.ca (NS, primary), realtor.ca
-  (Canada-wide, best-effort — falls back to paste on anti-bot blocks),
-  centris.ca (QC, placeholder — routes to paste for now), raw paste
-  (always works). See `listings/sources/`.
+- **Listings sources:** the `evaluate-property` skill fetches URLs
+  opportunistically (Viewpoint, realtor.ca) and falls back to asking
+  you to paste the listing text when sites block. URL-aware source
+  adapters + a `/ingest-listing` entry point are designed in
+  [docs/phase-3-plan.md](docs/phase-3-plan.md) and are the next
+  shipping target.
 - **Financing:** Canadian semi-annual mortgage compounding, CMHC premiums up
   to $1.5M insurable cap, 5% / 10% / 20% down modeled, investment minimum
   20% for non-owner-occupied.
@@ -184,12 +179,18 @@ real-estate-eval/
 
 ## Roadmap
 
-- **Phase 3 · Mode A (shipped):** `/ingest-listing` skill + source
-  adapters + criteria pre-screen + INDEX.md watchlist.
-  See [docs/phase-3-plan.md](docs/phase-3-plan.md).
-- **Phase 3.1 — next:** scheduled discovery ("Mode B") — daily scan of
-  configured sources, criteria filter, auto-analyze matches, email /
-  Telegram digest. Also Centris.ca (QC) adapter + `config/provinces/qc.md`.
+- **Phase 3 · Mode A (in progress):** `/ingest-listing` skill + source
+  adapters + criteria pre-screen + `INDEX.md` watchlist. Deterministic
+  TS foundation (slug, validator, criteria parser + screener,
+  index-md appender, collision detector, municipal loader) is
+  shipped under `src/utils/` with 67 vitest cases. Still to build:
+  the source-adapter prompts (`listings/sources/*.md`) and the
+  orchestrating `.claude/skills/ingest-listing/SKILL.md`. See
+  [docs/phase-3-plan.md](docs/phase-3-plan.md).
+- **Phase 3.1 — after Mode A:** scheduled discovery ("Mode B") —
+  daily scan of configured sources, criteria filter, auto-analyze
+  matches, email / Telegram digest. Also Centris.ca (QC) adapter +
+  `config/provinces/qc.md`.
 - **Phase 2:** replace the AI for financial math with a deterministic
   TypeScript engine + unit tests (foundation already in `src/utils/`).
 
