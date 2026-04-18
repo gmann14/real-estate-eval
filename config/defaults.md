@@ -79,10 +79,28 @@ Override via `config/owner-profile.md`:
 ## Conventions
 
 - **All figures in CAD** unless otherwise stated.
-- **Mortgage compounding**: Canadian semi-annual (NOT US monthly). Formula:
+- **Mortgage compounding**: Canadian semi-annual (NOT US monthly).
+  Canadian posted rates are compounded semi-annually not in advance
+  (per the *Interest Act*, s. 6). Using `r/12` for the monthly rate
+  is the US convention and overstates payments by about 0.4% at a
+  4.2% nominal rate.
+
+  Formula:
   ```
-  semi_annual_rate = (1 + annual_rate / 2)^(1/6) - 1
-  monthly_payment = P × r × (1+r)^n / ((1+r)^n - 1)
+  i = (1 + annual_rate / 2) ^ (1/6) - 1      // effective monthly
+  n = amortization_years × 12
+  payment = P × i / (1 − (1 + i) ^ −n)
   ```
+
+  **Authoritative implementation:** `src/analysis/financing.ts`.
+  When in doubt, call it via the CLI to verify a payment:
+  ```
+  npx tsx src/analysis/cli.ts <price> <down-fraction> <annual-rate> <amort-years>
+  # e.g. npx tsx src/analysis/cli.ts 485000 0.05 0.042 25
+  # → monthlyPayment: 2572.8
+  ```
+  The same helper also computes down payment, CMHC premium, and
+  total mortgage from a purchase price — use it instead of doing the
+  arithmetic by hand.
 - **All assumptions documented in the analysis**. Every number should trace to
   a source: comp, config file, or input override.

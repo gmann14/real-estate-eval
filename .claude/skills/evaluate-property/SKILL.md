@@ -52,9 +52,18 @@ numbers. This prevents a 700-line analysis built on wrong inputs.
 Produce `evaluations/<slug>/analysis.md` following `templates/analysis-template.md`.
 
 **All financial math uses Canadian semi-annual mortgage compounding** (not US
-monthly). Formula in `config/defaults.md`. Double-check your payment
-calculation — a $10/mo variance from rounding is acceptable; a $100/mo
-variance is a bug.
+monthly). Do NOT compute payments by hand — call the authoritative helper:
+
+```
+npx tsx src/analysis/cli.ts <price> <down-fraction> <annual-rate> <amort-years>
+# e.g. npx tsx src/analysis/cli.ts 485000 0.05 0.042 25
+```
+
+The JSON output gives you `downPayment`, `cmhcPremium`, `totalMortgage`, and
+`monthlyPayment` — use those numbers verbatim in the analysis. A manually
+computed payment that differs by more than $1/mo from the CLI output is a
+bug (usually from slipping into US monthly compounding, `r/12`). Re-check
+the CLI before publishing.
 
 **Always generate six scenarios** (A–F) at two financing levels (5% down if
 owner-occupy CMHC-eligible, 20% down). Show both Year 1 and steady-state
@@ -89,7 +98,10 @@ Before handing back the result, **run an audit pass** on your own output:
 
 1. Are the base-case assumptions aggressive or conservative? Err conservative.
 2. Did you verify CMHC eligibility for the property type + down payment combo?
-3. Is the mortgage payment using Canadian semi-annual compounding?
+3. Is the mortgage payment the exact figure returned by
+   `npx tsx src/analysis/cli.ts ...` for your (price, down, rate, amort)?
+   Run it again and diff if you're unsure — hand-computed payments are a
+   frequent source of bugs.
 4. Does the monthly OPEX total sum correctly?
 5. Are the price-sensitivity cells internally consistent (higher price →
    higher cash to close, longer crossover)?
