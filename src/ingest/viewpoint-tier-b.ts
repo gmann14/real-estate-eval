@@ -13,10 +13,19 @@
  * "viewpoint.ca", account configurable via --account=<email>) and
  * persists session state at .session/viewpoint.json so subsequent
  * runs skip the login flow.
+ *
+ * Architecture: the browser-bound step (page.evaluate) only reads the
+ * rendered text; all parsing lives in `parse-viewpoint.ts` so it can
+ * be unit-tested without spinning up Playwright.
  */
 import { writeFileSync } from "node:fs";
 import type { Page } from "playwright";
 import { closeSession, openSession } from "./viewpoint-auth.js";
+import {
+  buildDetails,
+  parseViewpointBody,
+  type ListingEvent,
+} from "./parse-viewpoint.js";
 
 interface CliArgs {
   urls: string[];
@@ -36,12 +45,6 @@ function parseArgs(argv: string[]): CliArgs {
     else if (!a.startsWith("--")) args.urls.push(a);
   }
   return args;
-}
-
-export interface ListingEvent {
-  date: string;
-  event: string;
-  price: string;
 }
 
 export interface TierBData {
@@ -86,11 +89,8 @@ function pidFromUrl(url: string): string | null {
   return m && m[1] ? m[1] : null;
 }
 
-async function extractFromPage(page: Page, url: string): Promise<TierBData> {
+async function readPageText(page: Page, url: string): Promise<string> {
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60_000 });
-
-  // Wait for the JS bundle to populate fields. We watch for the
-  // disappearance of unresolved handlebars markers, then settle.
   await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
   await page
     .waitForFunction(
@@ -113,9 +113,9 @@ async function extractFromPage(page: Page, url: string): Promise<TierBData> {
           if (
             el.innerText &&
             el.innerText.trim().toUpperCase() === label &&
-            (el as HTMLElement).offsetParent !== null
+            el.offsetParent !== null
           ) {
-            (el as HTMLElement).click();
+            el.click();
             return true;
           }
         }
@@ -125,199 +125,96 @@ async function extractFromPage(page: Page, url: string): Promise<TierBData> {
     await page.waitForTimeout(800);
   }
 
-  // Final settle for any async content fetched by the tab clicks.
   await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
   await page.waitForTimeout(1_500);
 
-  // NB: this function runs in the browser. tsx's transpile inserts a
-  // `__name` helper for named function expressions which breaks inside
-  // page.evaluate (the browser context has no `__name`). To avoid this,
-  // we pass the function source as a string.
-  const evalSource = `(() => {
-    var text = document.body && document.body.innerText ? document.body.innerText : "";
-    var lines = text.split(/\\r?\\n/).map(function(s){ return s.trim(); });
+  // Pull the rendered text. Any further parsing happens in Node so it
+  // can be unit-tested without Playwright.
+  return await page.evaluate(() => document.body?.innerText ?? "");
+}
 
-    // DETAILS panel renders one "LABEL:VALUE" per line.
-    var details = {};
-    for (var i = 0; i < lines.length; i++) {
-      var l = lines[i];
-      var ci = l.indexOf(":");
-      if (ci > 0 && ci < 60) {
-        var key = l.slice(0, ci).trim().toUpperCase();
-        var val = l.slice(ci + 1).trim();
-        if (val && val !== "N/A" && val !== "—" && !/^\\{\\{/.test(val) && !/^https?:/.test(val)) {
-          if (!details[key]) details[key] = val;
-        }
-      }
-    }
-    var pick = function() {
-      for (var k = 0; k < arguments.length; k++) {
-        var v = details[arguments[k].toUpperCase()];
-        if (v) return v;
-      }
-      return null;
-    };
-
-    // Summary panel — labels are on their own line, values follow on next line.
-    var labeledLine = function(label) {
-      for (var i = 0; i < lines.length; i++) {
-        if (lines[i].toUpperCase() === label.toUpperCase()) {
-          var n = lines[i + 1] || "";
-          if (n && n !== "N/A" && n !== "—" && !/^\\{\\{/.test(n)) return n;
-        }
-      }
-      return null;
-    };
-
-    // Listing-history table: rows look like
-    //   <STATUS>           e.g. "For Sale", "Sold", "Expired", "Withdrawn"
-    //   <START DATE>       "May 23, 2025"
-    //   <END DATE?>        optional, same date format (omitted for active)
-    //   <LIST PRICE>       "$1,175,000"
-    //   <SOLD PRICE?>      optional "$380,000"
-    //   <DURATION>         "331 days"
-    //   then a series of "<DATE>" + "Status change..." or "Price change..." sub-rows.
-    // We capture each (DATE, EVENT, PRICE) row by walking the LISTING HISTORY block.
-    var events = [];
-    var hStart = -1;
-    for (var k = 0; k < lines.length; k++) {
-      if (lines[k] === "LISTING HISTORY" && lines[k + 1] && /^STATUS$/.test(lines[k + 1])) {
-        hStart = k + 1;
-        break;
-      }
-    }
-    if (hStart < 0) {
-      // Fallback: first LISTING HISTORY occurrence followed by date-like row.
-      for (var k2 = 0; k2 < lines.length; k2++) {
-        if (lines[k2] === "LISTING HISTORY") { hStart = k2; break; }
-      }
-    }
-    if (hStart >= 0) {
-      var datePat = /^(\\d{4}-\\d{2}-\\d{2}|[A-Za-z]+ \\d{1,2}, \\d{4})$/;
-      var pricePat = /^\\$[\\d,]+$/;
-      var statusPat = /^(For Sale|Sold|Expired|Withdrawn|Pending|Conditional|Leased|Cancelled)$/i;
-      var hStop = Math.min(lines.length, hStart + 400);
-      var lastStatus = null;
-      for (var m = hStart; m < hStop; m++) {
-        var ln = lines[m];
-        if (!ln) continue;
-        if (statusPat.test(ln)) {
-          lastStatus = ln;
-          continue;
-        }
-        if (datePat.test(ln)) {
-          // Look ahead a few lines for an event description or price.
-          var ev = "";
-          var pr = "";
-          for (var look = 1; look <= 3; look++) {
-            var lk = lines[m + look] || "";
-            if (!ev && /change|status|price/i.test(lk)) { ev = lk; }
-            if (!pr && pricePat.test(lk)) { pr = lk; }
-          }
-          if (!ev && lastStatus) ev = lastStatus + " — listed";
-          events.push({ date: ln, event: ev, price: pr });
-        }
-      }
-    }
-
-    return {
-      rawSummaryText: text.slice(0, 25000),
-      listPrice: labeledLine("FOR SALE") || pick("LIST PRICE", "PRICE"),
-      address: null,
-      yearBuilt: pick("AGE", "YEAR BUILT"),
-      lotSize: labeledLine("LOT SIZE") || pick("LISTING PARCEL SIZE", "PARCEL SIZE"),
-      daysOnMarket: null,
-      assessment: pick("ASSESSED AT"),
-      annualTaxes: null,
-      zoning: pick("ZONING", "MLS ZONING"),
-      heating: pick("HEATING/COOLING", "HEATING", "HEAT TYPE"),
-      foundation: pick("FOUNDATION"),
-      basement: pick("BASEMENT"),
-      roof: pick("ROOF"),
-      water: pick("DRINKING WATER", "WATER", "WATER SOURCE"),
-      sewer: pick("SEWER"),
-      buildingStyle: pick("BUILDING STYLE", "STYLE"),
-      propertySubType: pick("PROPERTY SUB TYPE", "TYPE"),
-      exteriorFinish: pick("EXTERIOR", "EXTERIOR FINISH"),
-      flooring: pick("FLOORING"),
-      parking: pick("PARKING") || pick("HAS GARAGE"),
-      occupancy: pick("OCCUPANCY"),
-      possession: pick("POSSESSION"),
-      heritageDesignated: pick("HERITAGE", "HERITAGE PROPERTY", "HERITAGE DESIGNATED"),
-      listingAgentName: (function(){
-        for (var i = 0; i < lines.length; i++) {
-          if (/REALTOR®/.test(lines[i])) {
-            var prev = lines[i - 1] || "";
-            if (prev && prev.length < 60 && !/[a-z]/.test(prev[0] || "")) return prev;
-          }
-        }
-        return null;
-      })(),
-      listingAgentPhone: (function(){
-        for (var i = 0; i < lines.length; i++) {
-          if (/REALTOR®/.test(lines[i])) {
-            for (var j = 1; j <= 3; j++) {
-              var nx = lines[i + j] || "";
-              if (/^\\d{3}-\\d{3}-\\d{4}$/.test(nx)) return nx;
-            }
-          }
-        }
-        return null;
-      })(),
-      brokerage: pick("LISTED BY"),
-      listingEvents: events,
-      details: details,
-    };
-  })()`;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data = (await page.evaluate(evalSource as unknown as () => any)) as Record<string, any>;
+async function extractFromPage(page: Page, url: string): Promise<TierBData> {
+  const text = await readPageText(page, url);
+  const details = buildDetails(text);
+  const parsed = parseViewpointBody(text, details);
 
   const warnings: string[] = [];
-  const tierBKeys = [
-    "zoning",
-    "heating",
-    "foundation",
-    "water",
-    "sewer",
-  ] as const;
-  for (const k of tierBKeys) {
-    if (!data[k]) warnings.push(`Tier-B field "${k}" not populated`);
+  for (const k of ["zoning", "heating", "foundation", "water", "sewer"] as const) {
+    if (!parsed[k]) warnings.push(`Tier-B field "${k}" not populated`);
   }
 
   return {
     url,
     pid: pidFromUrl(url),
     fetchedAt: new Date().toISOString(),
-    listPrice: data.listPrice,
-    address: data.address,
-    yearBuilt: data.yearBuilt,
-    lotSize: data.lotSize,
-    daysOnMarket: data.daysOnMarket,
-    assessment: data.assessment,
-    annualTaxes: data.annualTaxes,
-    zoning: data.zoning,
-    heating: data.heating,
-    foundation: data.foundation,
-    basement: data.basement,
-    roof: data.roof,
-    water: data.water,
-    sewer: data.sewer,
-    buildingStyle: data.buildingStyle,
-    propertySubType: data.propertySubType,
-    exteriorFinish: data.exteriorFinish,
-    flooring: data.flooring,
-    parking: data.parking,
-    occupancy: data.occupancy,
-    possession: data.possession,
-    heritageDesignated: data.heritageDesignated,
-    listingAgentName: data.listingAgentName,
-    listingAgentPhone: data.listingAgentPhone,
-    brokerage: data.brokerage,
-    listingEvents: data.listingEvents ?? [],
+    listPrice: parsed.listPrice,
+    address: null,
+    yearBuilt: parsed.yearBuilt,
+    lotSize: parsed.lotSize,
+    daysOnMarket: null,
+    assessment: parsed.assessment,
+    annualTaxes: null,
+    zoning: parsed.zoning,
+    heating: parsed.heating,
+    foundation: parsed.foundation,
+    basement: parsed.basement,
+    roof: parsed.roof,
+    water: parsed.water,
+    sewer: parsed.sewer,
+    buildingStyle: parsed.buildingStyle,
+    propertySubType: parsed.propertySubType,
+    exteriorFinish: parsed.exteriorFinish,
+    flooring: parsed.flooring,
+    parking: parsed.parking,
+    occupancy: parsed.occupancy,
+    possession: parsed.possession,
+    heritageDesignated: parsed.heritageDesignated,
+    listingAgentName: parsed.listingAgentName,
+    listingAgentPhone: parsed.listingAgentPhone,
+    brokerage: parsed.brokerage,
+    listingEvents: parsed.listingEvents,
     saleHistory: [],
-    rawSummaryText: data.rawSummaryText ?? null,
-    details: (data.details as Record<string, string>) ?? {},
+    rawSummaryText: text.slice(0, 25_000),
+    details,
     warnings,
+  };
+}
+
+function emptyResult(url: string, message: string): TierBData {
+  return {
+    url,
+    pid: pidFromUrl(url),
+    fetchedAt: new Date().toISOString(),
+    listPrice: null,
+    address: null,
+    yearBuilt: null,
+    lotSize: null,
+    daysOnMarket: null,
+    assessment: null,
+    annualTaxes: null,
+    zoning: null,
+    heating: null,
+    foundation: null,
+    basement: null,
+    roof: null,
+    water: null,
+    sewer: null,
+    buildingStyle: null,
+    propertySubType: null,
+    exteriorFinish: null,
+    flooring: null,
+    parking: null,
+    occupancy: null,
+    possession: null,
+    heritageDesignated: null,
+    listingAgentName: null,
+    listingAgentPhone: null,
+    brokerage: null,
+    listingEvents: [],
+    saleHistory: [],
+    rawSummaryText: null,
+    details: {},
+    warnings: [message],
   };
 }
 
@@ -346,41 +243,7 @@ async function main(): Promise<void> {
         process.stderr.write(
           `[viewpoint-tier-b] FAILED ${url}: ${(e as Error).message}\n`,
         );
-        results.push({
-          url,
-          pid: pidFromUrl(url),
-          fetchedAt: new Date().toISOString(),
-          listPrice: null,
-          address: null,
-          yearBuilt: null,
-          lotSize: null,
-          daysOnMarket: null,
-          assessment: null,
-          annualTaxes: null,
-          zoning: null,
-          heating: null,
-          foundation: null,
-          basement: null,
-          roof: null,
-          water: null,
-          sewer: null,
-          buildingStyle: null,
-          propertySubType: null,
-          exteriorFinish: null,
-          flooring: null,
-          parking: null,
-          occupancy: null,
-          possession: null,
-          heritageDesignated: null,
-          listingAgentName: null,
-          listingAgentPhone: null,
-          brokerage: null,
-          listingEvents: [],
-          saleHistory: [],
-          rawSummaryText: null,
-          details: {},
-          warnings: [`fetch failed: ${(e as Error).message}`],
-        });
+        results.push(emptyResult(url, `fetch failed: ${(e as Error).message}`));
       }
     }
   } finally {
