@@ -13,6 +13,10 @@ config/owner-profile.yaml
 .env.local
 *.key
 
+# Playwright session state (contains auth cookies)
+.session/
+.playwright-mcp/
+
 # Node / build artifacts
 node_modules/
 dist/
