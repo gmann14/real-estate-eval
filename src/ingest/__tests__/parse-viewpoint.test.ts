@@ -4,9 +4,13 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   buildDetails,
+  extractAddress,
+  extractAssessmentAndTax,
+  extractDaysOnMarket,
   extractHeritage,
   extractListingAgent,
   extractListingEvents,
+  extractSaleHistory,
   parseViewpointBody,
 } from "../parse-viewpoint.js";
 
@@ -133,6 +137,74 @@ describe("extractListingEvents", () => {
   });
 });
 
+describe("extractAddress", () => {
+  it("returns the line directly after '<n> days on market'", () => {
+    const lines = MONTAGUE.rawSummaryText.split(/\r?\n/).map((s) => s.trim());
+    expect(extractAddress(lines)).toBe("56 Montague Street, Lunenburg");
+  });
+
+  it("returns null when the next line isn't address-shaped", () => {
+    expect(extractAddress(["73 days on market", "FLOOR PLAN"])).toBeNull();
+  });
+
+  it("returns null when no DOM marker is present", () => {
+    expect(extractAddress(["random", "text"])).toBeNull();
+  });
+});
+
+describe("extractDaysOnMarket", () => {
+  it("returns the integer string from '<n> days on market'", () => {
+    const lines = MONTAGUE.rawSummaryText.split(/\r?\n/).map((s) => s.trim());
+    expect(extractDaysOnMarket(lines)).toBe("331");
+  });
+
+  it("returns null when no DOM line is present", () => {
+    expect(extractDaysOnMarket(["just text"])).toBeNull();
+  });
+});
+
+describe("extractAssessmentAndTax", () => {
+  it("parses the '<year> ASSESSMENT & TAX' / '$<assess> $<tax>' block", () => {
+    const lines = MONTAGUE.rawSummaryText.split(/\r?\n/).map((s) => s.trim());
+    const result = extractAssessmentAndTax(lines);
+    expect(result.assessment).toBe("$683,900");
+    expect(result.annualTaxes).toBe("$9,410");
+  });
+
+  it("returns nulls when the block isn't found", () => {
+    expect(extractAssessmentAndTax(["FOO", "BAR"])).toEqual({
+      assessment: null,
+      annualTaxes: null,
+    });
+  });
+});
+
+describe("extractSaleHistory", () => {
+  it("returns historical sales for 56 Montague (multiple sales)", () => {
+    const lines = MONTAGUE.rawSummaryText.split(/\r?\n/).map((s) => s.trim());
+    const sales = extractSaleHistory(lines);
+    // 2008 sale at $380K and 2016 sale at $380K both expected
+    expect(sales.some((s) => s.date === "Sep 22, 2016" && s.price === "$380,000")).toBe(true);
+    expect(sales.some((s) => s.date === "Sep 30, 2008" && s.price === "$380,000")).toBe(true);
+  });
+
+  it("dedupes identical {date,price} pairs", () => {
+    const lines = MONTAGUE.rawSummaryText.split(/\r?\n/).map((s) => s.trim());
+    const sales = extractSaleHistory(lines);
+    const seen = new Set<string>();
+    for (const s of sales) {
+      const k = `${s.date}|${s.price}`;
+      expect(seen.has(k)).toBe(false);
+      seen.add(k);
+    }
+  });
+
+  it("returns [] for a property with no historical sales (94 King)", () => {
+    const lines = KING.rawSummaryText.split(/\r?\n/).map((s) => s.trim());
+    expect(extractSaleHistory(lines)).toEqual([]);
+  });
+});
+
 describe("parseViewpointBody — full integration", () => {
   it("extracts Tier-B fields for 56 Montague (VP brokerage)", () => {
     const details = buildDetails(MONTAGUE.rawSummaryText);
@@ -145,6 +217,11 @@ describe("parseViewpointBody — full integration", () => {
     expect(parsed.brokerage).toBe("Viewpoint Realty Services Inc.(lunenburg)");
     expect(parsed.listingAgentName).toBe("STEPHANIE DEVRIES");
     expect(parsed.heritageDesignated).toBeNull();
+    expect(parsed.address).toBe("56 Montague Street, Lunenburg");
+    expect(parsed.daysOnMarket).toBe("331");
+    expect(parsed.annualTaxes).toBe("$9,410");
+    expect(parsed.assessment).toBe("$683,900");
+    expect(parsed.saleHistory.length).toBeGreaterThanOrEqual(2);
   });
 
   it("extracts Tier-B fields for 69 Fox (Sotheby's brokerage)", () => {

@@ -17,11 +17,19 @@ export interface ListingEvent {
   price: string;
 }
 
+export interface SaleRecord {
+  date: string;
+  price: string;
+}
+
 export interface ParsedViewpoint {
+  address: string | null;
   listPrice: string | null;
   yearBuilt: string | null;
   lotSize: string | null;
   assessment: string | null;
+  annualTaxes: string | null;
+  daysOnMarket: string | null;
   zoning: string | null;
   heating: string | null;
   foundation: string | null;
@@ -41,6 +49,7 @@ export interface ParsedViewpoint {
   listingAgentPhone: string | null;
   brokerage: string | null;
   listingEvents: ListingEvent[];
+  saleHistory: SaleRecord[];
 }
 
 const VIEWPOINT_HOUSE_AGENTS = new Set(["STEPHANIE DEVRIES"]);
@@ -196,6 +205,69 @@ export function extractListingEvents(lines: string[]): ListingEvent[] {
   return deduped;
 }
 
+export function extractAddress(lines: string[]): string | null {
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (!/^\d+\s+days on market$/i.test(lines[i] ?? "")) continue;
+    const next = (lines[i + 1] ?? "").trim();
+    // Format: "<civic> <street name>, <city>"
+    if (/^\d+\s+[\w\s.'’-]+,\s+[\w\s.'’-]+$/.test(next)) return next;
+  }
+  return null;
+}
+
+export function extractDaysOnMarket(lines: string[]): string | null {
+  for (const raw of lines) {
+    const m = (raw ?? "").match(/^(\d+)\s+days on market$/i);
+    if (m) return m[1] ?? null;
+  }
+  return null;
+}
+
+export function extractAssessmentAndTax(
+  lines: string[],
+): { assessment: string | null; annualTaxes: string | null } {
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (!/^\d{4} ASSESSMENT & TAX$/.test(lines[i] ?? "")) continue;
+    const next = (lines[i + 1] ?? "").trim();
+    const m = next.match(/^(\$[\d,]+)\s+(\$[\d,]+)$/);
+    if (m) return { assessment: m[1] ?? null, annualTaxes: m[2] ?? null };
+  }
+  return { assessment: null, annualTaxes: null };
+}
+
+export function extractSaleHistory(lines: string[]): SaleRecord[] {
+  const sales: SaleRecord[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i] !== "Sold") continue;
+    // Sale-row block:
+    //   Sold
+    //   <start date>
+    //   <end date>          ← this is the sale date
+    //   $<list price>
+    //   $<sold price>       ← this is the sale price
+    //   <duration> days
+    const startDate = (lines[i + 1] ?? "").trim();
+    const endDate = (lines[i + 2] ?? "").trim();
+    const listPrice = (lines[i + 3] ?? "").trim();
+    const soldPrice = (lines[i + 4] ?? "").trim();
+    if (
+      DATE_PAT.test(startDate) &&
+      DATE_PAT.test(endDate) &&
+      PRICE_PAT.test(listPrice) &&
+      PRICE_PAT.test(soldPrice)
+    ) {
+      sales.push({ date: endDate, price: soldPrice });
+    }
+  }
+  const seen = new Set<string>();
+  return sales.filter((s) => {
+    const k = `${s.date}|${s.price}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
 export function parseViewpointBody(
   text: string,
   details: Record<string, string>,
@@ -206,14 +278,18 @@ export function parseViewpointBody(
   const heritage =
     pick(details, "HERITAGE", "HERITAGE PROPERTY", "HERITAGE DESIGNATED") ??
     extractHeritage(text);
+  const taxInfo = extractAssessmentAndTax(lines);
 
   return {
+    address: extractAddress(lines),
     listPrice: labeledLine(lines, "FOR SALE") ?? pick(details, "LIST PRICE", "PRICE"),
     yearBuilt: pick(details, "AGE", "YEAR BUILT"),
     lotSize:
       labeledLine(lines, "LOT SIZE") ??
       pick(details, "LISTING PARCEL SIZE", "PARCEL SIZE"),
-    assessment: pick(details, "ASSESSED AT"),
+    assessment: taxInfo.assessment ?? pick(details, "ASSESSED AT"),
+    annualTaxes: taxInfo.annualTaxes,
+    daysOnMarket: extractDaysOnMarket(lines),
     zoning: pick(details, "ZONING", "MLS ZONING"),
     heating: pick(details, "HEATING/COOLING", "HEATING", "HEAT TYPE"),
     foundation: pick(details, "FOUNDATION"),
@@ -233,5 +309,6 @@ export function parseViewpointBody(
     listingAgentPhone: agent.phone,
     brokerage,
     listingEvents: extractListingEvents(lines),
+    saleHistory: extractSaleHistory(lines),
   };
 }

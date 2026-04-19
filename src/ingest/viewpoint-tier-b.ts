@@ -25,6 +25,7 @@ import {
   buildDetails,
   parseViewpointBody,
   type ListingEvent,
+  type SaleRecord,
 } from "./parse-viewpoint.js";
 
 interface CliArgs {
@@ -78,7 +79,7 @@ export interface TierBData {
   listingAgentPhone: string | null;
   brokerage: string | null;
   listingEvents: ListingEvent[];
-  saleHistory: Array<{ date: string; price: string }>;
+  saleHistory: SaleRecord[];
   rawSummaryText: string | null;
   details: Record<string, string>;
   warnings: string[];
@@ -148,12 +149,12 @@ async function extractFromPage(page: Page, url: string): Promise<TierBData> {
     pid: pidFromUrl(url),
     fetchedAt: new Date().toISOString(),
     listPrice: parsed.listPrice,
-    address: null,
+    address: parsed.address,
     yearBuilt: parsed.yearBuilt,
     lotSize: parsed.lotSize,
-    daysOnMarket: null,
+    daysOnMarket: parsed.daysOnMarket,
     assessment: parsed.assessment,
-    annualTaxes: null,
+    annualTaxes: parsed.annualTaxes,
     zoning: parsed.zoning,
     heating: parsed.heating,
     foundation: parsed.foundation,
@@ -173,7 +174,7 @@ async function extractFromPage(page: Page, url: string): Promise<TierBData> {
     listingAgentPhone: parsed.listingAgentPhone,
     brokerage: parsed.brokerage,
     listingEvents: parsed.listingEvents,
-    saleHistory: [],
+    saleHistory: parsed.saleHistory,
     rawSummaryText: text.slice(0, 25_000),
     details,
     warnings,
