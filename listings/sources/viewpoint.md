@@ -62,6 +62,16 @@ for whether WebFetch will return useful content:**
    ```
    Subsequent runs reuse the saved session — no re-login. Use
    `--force-login` to refresh, `--headed` to debug.
+4a. **To go straight from URL to a draft `input.md`,** chain the
+    builder script:
+    ```sh
+    npx tsx src/ingest/build-input-md.ts \
+      evaluations/.tier-b/<slug>.json \
+      > evaluations/<slug>/input.md
+    ```
+    This populates every Tier-B-derivable field and marks the
+    rest with `[PROMPT USER]`. The `/ingest-listing` skill calls
+    both scripts in sequence for ViewPoint URLs.
 5. **On 403 / CAPTCHA / rate-limit:** fall through to the paste
    adapter (`listings/sources/paste.md`).
 6. **Max 1 retry** on transient failures. No retry storms.

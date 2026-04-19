@@ -42,6 +42,31 @@ fields (address, asking_price, type, municipality, province).
 If any `[PROMPT USER]` markers remain after extraction, stop and ask
 the user for the missing values before continuing.
 
+### 2a — ViewPoint URLs: use the Tier-B extractor pipeline
+
+For ViewPoint cutsheet/property URLs, prefer the deterministic
+extraction pipeline over WebFetch + manual parsing:
+
+```sh
+# Pulls Tier-B fields (login-gated) into a JSON file
+npx tsx src/ingest/viewpoint-tier-b.ts <url> --out=/tmp/tier-b-<slug>.json
+
+# Renders that JSON into a draft input.md (Tier-B fields populated;
+# unknowns marked [PROMPT USER])
+npx tsx src/ingest/build-input-md.ts /tmp/tier-b-<slug>.json \
+  > evaluations/<slug>/input.md
+```
+
+The first run prompts for the ViewPoint password (read from macOS
+Keychain — see `listings/sources/viewpoint.md` for one-time setup).
+Subsequent runs reuse the saved session in `.session/viewpoint.json`.
+
+After running the pipeline, **read the resulting input.md**, find
+every `[PROMPT USER]` marker, and either fill from listing photos or
+ask the user for the residual fields (typically: type, unit
+breakdown, STR-permitted lookup, known issues, recent renovations).
+Then continue from Step 3.
+
 ## Step 3 — Compute slug and check for collision
 
 Slug format: `<street-num>-<street-slug>-<city-slug>` (ASCII, kebab-case,
