@@ -40,13 +40,15 @@ export function canadianMortgagePayment(input: MortgagePaymentInput): number {
   return (principal * i) / (1 - Math.pow(1 + i, -n));
 }
 
+const LTV_EPSILON = 1e-9;
+
 export function cmhcPremiumRate(ltv: number, surcharges = 0): number {
-  if (ltv <= 0.65) return 0.006 + surcharges;
-  if (ltv <= 0.75) return 0.017 + surcharges;
-  if (ltv <= 0.8) return 0.024 + surcharges;
-  if (ltv <= 0.85) return 0.028 + surcharges;
-  if (ltv <= 0.9) return 0.031 + surcharges;
-  if (ltv <= 0.95) return 0.04 + surcharges;
+  if (ltv <= 0.65 + LTV_EPSILON) return 0.006 + surcharges;
+  if (ltv <= 0.75 + LTV_EPSILON) return 0.017 + surcharges;
+  if (ltv <= 0.8 + LTV_EPSILON) return 0.024 + surcharges;
+  if (ltv <= 0.85 + LTV_EPSILON) return 0.028 + surcharges;
+  if (ltv <= 0.9 + LTV_EPSILON) return 0.031 + surcharges;
+  if (ltv <= 0.95 + LTV_EPSILON) return 0.04 + surcharges;
   throw new RangeError(`LTV ${ltv} exceeds 95% — CMHC-insured financing not available`);
 }
 
@@ -61,7 +63,7 @@ export function cmhcPremium(input: CMHCPremiumInput): { premium: number; baseMor
   const baseMortgage = purchasePrice - downPayment;
   const ltv = baseMortgage / purchasePrice;
 
-  if (ltv <= 0.8) {
+  if (ltv <= 0.8 + LTV_EPSILON) {
     return { premium: 0, baseMortgage, ltv, rate: 0 };
   }
 

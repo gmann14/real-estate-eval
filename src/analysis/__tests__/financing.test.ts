@@ -107,6 +107,19 @@ describe("cmhcPremiumRate", () => {
   it("rejects LTVs above 95%", () => {
     expect(() => cmhcPremiumRate(0.96)).toThrow(RangeError);
   });
+
+  it("tolerates floating-point LTVs that are 0.95 by intent (e.g. 0.9500000000000001)", () => {
+    expect(cmhcPremiumRate(0.95 + 1e-12)).toBe(0.04);
+  });
+});
+
+describe("financingBreakdown — floating-point edge cases", () => {
+  it("handles 5% down on $749,999 without tripping the LTV guard", () => {
+    const result = financingBreakdown(749_999, 0.05, 0.042, 25);
+    expect(result.premiumRate).toBe(0.04);
+    expect(result.totalMortgage).toBeCloseTo(740_999.01, 2);
+    expect(result.monthlyPayment).toBeCloseTo(3978.56, 1);
+  });
 });
 
 describe("cmhcPremium", () => {

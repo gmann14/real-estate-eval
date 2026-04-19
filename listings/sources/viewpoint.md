@@ -29,14 +29,31 @@ for whether WebFetch will return useful content:**
    were given a short code. Feeding a short URL directly to WebFetch
    will return the SPA shell and fabricated data.
 2. **WebFetch the cutsheet or `/property/<pid>` URL.** Most of the
-   listing *summary* is rendered server-side in these shapes.
-3. **On 403 / CAPTCHA / rate-limit:** fall through to the paste
+   listing *summary* is rendered server-side in these shapes — see
+   the "Reliably present in the cutsheet HTML" list below.
+3. **For Tier-A enrichment (age, lot, taxes, assessment, DOM,
+   listing history):** use the Playwright MCP (`mcp__playwright__*`).
+   - `browser_navigate` to `/property/<pid>` (auto-redirects to the
+     cutsheet URL).
+   - `browser_wait_for` ~5 seconds for the JS bundle to populate the
+     summary panel.
+   - `browser_evaluate` against `document.body.innerText` and regex
+     out the labelled fields. The summary block is consistent across
+     Lunenburg-area listings:
+     `BEDROOMS / BATHROOMS / AGE / MLA/TLA / EST. MORTGAGE / PRICE/SQ. FT. / <YEAR> ASSESSMENT & TAX / LOT SIZE / LISTING HISTORY / HISTORICAL ASSESSMENT / BUILDING PERMITS`.
+   - `browser_close` when done. One Playwright session can serve
+     multiple listings sequentially — reuse it.
+4. **Tier-B fields stay handlebars** even after Playwright render
+   because they require an authenticated Viewpoint session. Do NOT
+   try to log in. Mark them `[PROMPT USER]` and let the user fill
+   from their own browser session.
+5. **On 403 / CAPTCHA / rate-limit:** fall through to the paste
    adapter (`listings/sources/paste.md`).
-4. **Max 1 retry** on transient failures. No retry storms.
+6. **Max 1 retry** on transient failures. No retry storms.
 
 ## What is and isn't server-rendered (critical — verified 2026-04)
 
-**Reliably present in the cutsheet HTML** (safe to extract):
+**Reliably present in the cutsheet HTML** (safe to extract via WebFetch):
 
 - `list_price`, `address`, `civicnum`, `street`, `city`, `pid`,
   `listing_id`
@@ -45,35 +62,54 @@ for whether WebFetch will return useful content:**
 - `list_dt`, `update_dt`
 - `listing_b1` (brokerage name)
 - Full remarks text: parse the `<script type="application/ld+json">`
-  block and read the `description` field.
+  block and read the `description` field. Postal code, geo, and the
+  full image array also live in this JSON-LD block.
 - `pix_count` (photo count) and individual image URLs under
   `viewpoint.ca/media/...`
 
 **Loaded client-side via JS and NOT present in raw HTML** — these
 appear as unresolved handlebars templates like
-`{{ entry.year_built || 'N/A' }}`:
+`{{ entry.year_built || 'N/A' }}` and split into two tiers:
 
-- `year_built`
-- `annual_taxes` / property taxes
+*Tier A — public after JS render (extractable via Playwright with no login):*
+
+- `age` (years since built — derive `year_built = current_year − age`)
+- `lot_sqft` (rendered as e.g. `2,153 sqft`)
+- Current-year `assessment_value` and `annual_taxes` (e.g.
+  `2026 ASSESSMENT & TAX  $683,900  $9,410`)
+- `days_on_market`
+- Listing-history event count (e.g. `12 events over 17 years`) and
+  historical-assessment growth (e.g. `51% increase (2022-2026)`)
+- Building permit count (often `N/A` in MODL towns)
+- `est_mortgage_monthly` (Viewpoint's own estimate — do not use as a
+  payment figure; use `src/analysis/cli.ts` for canonical math)
+- Price/sqft
+
+*Tier B — login-gated (still handlebars after Playwright render
+without a logged-in session):*
+
+- `zoning` / `mls_zoning`
 - `heating` type
 - `foundation`, `basement`, `roof`
-- `zoning`
 - `water`, `sewer`
 - `building_style`, `property_sub_type`
-- `lot_size` (as rendered number — the raw `lot_sqft` may appear but
-  verify against the HTML before trusting)
-- Heritage designation flag
+- `commission`, `occupancy`, `possession`
+- `listing_owners` / `provincial_owners`
+- Listing-agent name + phone (only brokerage is public)
+- Heritage designation flag (when present)
 
 **HARD RULE — do not fabricate these fields from the description
 text.** If the description says "late 1800s home", do NOT populate
-`year_built: 1890`. Set `year_built: unknown` and add a
-`[PROMPT USER]` marker. LLMs will happily synthesize plausible
-Victorian-era numbers for Lunenburg listings; this exact pattern
-produced fabricated extractions during the 2026-04 smoke test.
+`year_built: 1890`. Pull `year_built` from the rendered AGE summary
+(Tier A) instead. If even that's unavailable, mark `year_built:
+unknown` and add a `[PROMPT USER]` marker. LLMs will happily
+synthesize plausible Victorian-era numbers for Lunenburg listings;
+this exact pattern produced fabricated extractions during the
+2026-04 smoke test.
 
-Same rule applies to all the JS-rendered fields above. Extract them
-only if you see a concrete value (not a `{{ handlebars }}` template)
-in the HTML.
+Same rule applies to all Tier B fields. Extract them only if you see
+a concrete value (not a `{{ handlebars }}` template) in the HTML or
+the rendered DOM.
 
 ## Page landmarks to extract from
 
