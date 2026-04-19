@@ -28,6 +28,7 @@ quality but relies on the agent (not compiled code) for financial math.
 | Agent workflow | ✅ `.claude/skills/evaluate-property/SKILL.md` | same + calls deterministic engine |
 | Ingestion skill | ✅ `.claude/skills/ingest-listing/SKILL.md` (Mode A — paste/URL) | + Mode B scheduled scan |
 | Source adapters | ✅ paste, viewpoint, realtor.ca (`listings/sources/`) | + centris.ca full |
+| Tier-B extractor (login-gated VP fields) | ✅ `src/ingest/viewpoint-tier-b.ts` + Playwright + macOS Keychain | + realtor.ca / centris.ca analogues |
 | Criteria pre-screen | ✅ `config/criteria.example.md` + agent logic | + TS `src/utils/criteria.ts` already in place |
 | Deterministic helpers | 🟡 `src/utils/` (slug, validate, criteria, screen, index-md, collision, municipal) with vitest | + financial engine |
 | Municipal configs | 🟡 MODL + HRM (NS); Montreal placeholder | + ON/BC/AB + per-borough QC |
@@ -44,6 +45,26 @@ once Phase 2 (deterministic engine) and Phase 3 (personal-use features) are
 built. Sections 3, 7, 8.1, and 10 describe what works today.
 
 See the repo-level `README.md` for what's actually usable right now.
+
+### Known gaps (as of 2026-04)
+
+- **URL → analysis.md is not end-to-end automated.** The current flow is
+  URL → `input.md` (via `/ingest-listing` + Tier-B extractor). The
+  `analysis.md` file is still authored by the `/evaluate-property` agent
+  across multiple passes. Full URL → analysis.md automation waits on
+  Phase 2 (deterministic financial engine).
+- **Zoning is not surfaced by any current adapter.** ViewPoint doesn't
+  expose zoning in its Tier-A or Tier-B fields. Marked `[PROMPT USER]`
+  in the input template until a MODL / HRM / municipal-GIS adapter is
+  built (Phase 3.1 candidate).
+- **Heritage designation is extracted heuristically** from listing
+  description text (e.g., "Provincial Heritage Property" regex). Always
+  flagged as "extracted — verify with municipality" in the analysis.
+- **Listing agent is unreliable on non-VP brokerages** until the
+  extractor is cross-verified against the `LISTED BY` brokerage field.
+  Fix in progress — see [docs/tdd-fix-plan.md](docs/tdd-fix-plan.md).
+- **`src/ingest/` lacks unit tests** — being backfilled; see the TDD
+  fix plan document.
 
 ---
 

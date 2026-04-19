@@ -43,10 +43,25 @@ for whether WebFetch will return useful content:**
      `BEDROOMS / BATHROOMS / AGE / MLA/TLA / EST. MORTGAGE / PRICE/SQ. FT. / <YEAR> ASSESSMENT & TAX / LOT SIZE / LISTING HISTORY / HISTORICAL ASSESSMENT / BUILDING PERMITS`.
    - `browser_close` when done. One Playwright session can serve
      multiple listings sequentially — reuse it.
-4. **Tier-B fields stay handlebars** even after Playwright render
-   because they require an authenticated Viewpoint session. Do NOT
-   try to log in. Mark them `[PROMPT USER]` and let the user fill
-   from their own browser session.
+4. **For Tier-B fields (zoning, heating, foundation, water/sewer,
+   roof, basement, building style, listing-event log, heritage flag):**
+   use the dedicated extractor at `src/ingest/viewpoint-tier-b.ts`.
+   It uses Playwright with a persistent session (`.session/viewpoint.json`)
+   and reads credentials from macOS Keychain (service `viewpoint.ca`,
+   account configurable via `--account=<email>`). One-time setup:
+   ```sh
+   security add-internet-password -s viewpoint.ca \
+     -a graham_mann14@hotmail.com -r htps -T '' -U -w
+   # (paste password when prompted)
+   ```
+   Then:
+   ```sh
+   npx tsx src/ingest/viewpoint-tier-b.ts \
+     https://www.viewpoint.ca/property/60063062 \
+     --out=evaluations/.tier-b/<slug>.json
+   ```
+   Subsequent runs reuse the saved session — no re-login. Use
+   `--force-login` to refresh, `--headed` to debug.
 5. **On 403 / CAPTCHA / rate-limit:** fall through to the paste
    adapter (`listings/sources/paste.md`).
 6. **Max 1 retry** on transient failures. No retry storms.
@@ -86,17 +101,27 @@ appear as unresolved handlebars templates like
 - Price/sqft
 
 *Tier B — login-gated (still handlebars after Playwright render
-without a logged-in session):*
+without a logged-in session — extractable via `src/ingest/viewpoint-tier-b.ts`):*
 
-- `zoning` / `mls_zoning`
-- `heating` type
+- `zoning` / `mls_zoning` — **note:** ViewPoint doesn't actually
+  populate this field for MODL listings; comes back `null` even with
+  full Tier-B access. Treat as a known gap, not a bug.
+- `heating` type, `fuel_supply`
 - `foundation`, `basement`, `roof`
 - `water`, `sewer`
-- `building_style`, `property_sub_type`
+- `building_style`, `property_sub_type`, `exterior`, `flooring`
 - `commission`, `occupancy`, `possession`
 - `listing_owners` / `provincial_owners`
-- Listing-agent name + phone (only brokerage is public)
-- Heritage designation flag (when present)
+- Listing-agent name + phone — **caveat:** ViewPoint shows their
+  house agent (Stephanie DeVries) in the page chrome on every
+  listing. The extractor cross-checks against `LISTED BY` brokerage
+  to suppress this on non-VP-brokered listings. Always verify the
+  agent name against the brokerage shown.
+- Heritage designation — VP rarely populates the structured field
+  even for heritage properties. The extractor falls back to
+  description-text scanning for "Provincial Heritage Property" /
+  "Municipal Heritage Property". UNESCO World Heritage Site
+  membership (Old Town Lunenburg) is **context**, not designation.
 
 **HARD RULE — do not fabricate these fields from the description
 text.** If the description says "late 1800s home", do NOT populate

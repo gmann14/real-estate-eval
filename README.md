@@ -152,6 +152,10 @@ real-estate-eval/
 │   └── provinces/
 │       └── ns.md                        # Nova Scotia defaults + rules
 ├── src/
+│   ├── ingest/                          # Tier-B extractor (Playwright + macOS Keychain)
+│   │   ├── keychain.ts
+│   │   ├── viewpoint-auth.ts
+│   │   └── viewpoint-tier-b.ts
 │   └── utils/                           # Deterministic TS helpers (slug, validate,
 │                                        # criteria, screen, index-md, collision, municipal)
 ├── docs/
