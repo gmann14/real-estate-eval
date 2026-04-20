@@ -4,19 +4,25 @@
 - [x] 9 Prince Street Lunenburg — full analysis (6 scenarios, stress tests, rent-vs-buy) — 2026-03-20
 - [x] Tier-B (login-gated) extractor for Viewpoint.ca via Playwright + macOS Keychain — 2026-04-19
 - [x] Tier-B pass across 56 Montague / 94 King / 69 Fox with material analysis updates — 2026-04-19
+- [x] Tier-B extractor TDD fix pass — refactor to pure `parseViewpointBody`, fixture tests, 8 fixes (see below) — 2026-04-20
+- [x] Wire parser outputs through `TierBData` — address / daysOnMarket / annualTaxes / saleHistory no longer silently dropped — 2026-04-20
+- [x] `src/ingest/build-input-md.ts` — render Tier-B JSON → draft `input.md` with `[PROMPT USER]` markers for residual fields — 2026-04-20
 
-## To Do — Tier-B extractor TDD fix pass (2026-04-19)
-See [docs/tdd-fix-plan.md](../docs/tdd-fix-plan.md) for the full plan.
+## Completed — Tier-B extractor TDD fix pass (2026-04-20)
+See [docs/tdd-fix-plan.md](../docs/tdd-fix-plan.md) for the full plan. 41 new ingest tests (27 parser + 14 builder); full suite 133/133.
 
-- [ ] Refactor: extract pure `parseViewpointBody` from `viewpoint-tier-b.ts` for unit-testability
-- [ ] Fix #1: listing agent false positive on non-VP brokerages (69 Fox / Sotheby's returns ViewPoint's house agent)
-- [ ] Fix #2: extract heritage designation from description text (currently `null` for 69 Fox despite "Provincial Heritage Property" in description)
-- [ ] Fix #3: dedupe listing events (69 Fox returns 41 events with duplicates, ~30 unique)
-- [ ] Fix #4: strengthen event-label extraction (currently falls back to "Expired — listed" on price-change rows)
-- [ ] Fix #5: finish 94 King Scenario B/C/D with oil OPEX delta (only Scenario A updated)
-- [ ] Fix #6: finish 69 Fox D-Inn scenario with heating + roof deltas
-- [ ] Fix #7: recompute 56 Montague scenarios with electric-heat savings
-- [ ] Fix #11: bump `details` key length from 60 to 80 chars
+- [x] Refactor: extract pure `parseViewpointBody` from `viewpoint-tier-b.ts` for unit-testability
+- [x] Fix #1: listing agent false positive on non-VP brokerages (69 Fox / Sotheby's returns ViewPoint's house agent)
+- [x] Fix #2: extract heritage designation from description text (currently `null` for 69 Fox despite "Provincial Heritage Property" in description)
+- [x] Fix #3: dedupe listing events (69 Fox returns 41 events with duplicates, ~30 unique)
+- [x] Fix #4: strengthen event-label extraction (currently falls back to "Expired — listed" on price-change rows)
+- [x] Fix #5: finish 94 King Scenario B/C/D with oil OPEX delta (directional flow-through table)
+- [x] Fix #6: finish 69 Fox D-Inn scenario with heating + roof deltas (directional flow-through table)
+- [x] Fix #7: recompute 56 Montague scenarios with electric-heat savings (directional flow-through table)
+- [x] Fix #11: bump `details` key length from 60 to 80 chars
+
+## Deferred
+- [ ] HTML-fixture E2E test for the Playwright DOM-read/tab-click path — pure parser has 27 fixture tests; DOM path only exercised in live runs. Marginal coverage vs. value of adding Playwright to test runtime.
 
 ## To Do — general
 - [ ] Build reusable evaluation template from Prince Street analysis
