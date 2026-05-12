@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(./.claude/tasks.md)",
+      "Write(./.claude/tasks.md)",
+      "Edit(./.claude/status.md)",
+      "Write(./.claude/status.md)",
+      "Edit(./.claude/context.md)",
+      "Write(./.claude/context.md)"
+    ]
+  }
+}

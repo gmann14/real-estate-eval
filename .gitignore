@@ -21,6 +21,15 @@ coverage/
 *.log
 .DS_Store
 
+# Python build / cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
 # IDE
 .vscode/
 .idea/
@@ -28,3 +37,20 @@ coverage/
 
 # OS
 Thumbs.db
+
+# Tax-sale toolkit data (see tax_sale/RUNBOOK-2027.md to regenerate locally):
+# - data/probe/   : downloaded MODL public PDFs (large; re-scrapeable)
+# - data/raw/     : alternative scrape destination per spec §4
+# - data/enrichment/ : manually-collected PVSC values (PII-light but personal)
+# - hand-OCR'd JSON fixtures contain real bidder names from MODL's award
+#   PDFs — kept local to avoid bulk-republishing real people's names in a
+#   searchable public repo. Spec §5/§13 calls for null/hashed bidder labels
+#   in any republished form.
+data/probe/
+data/raw/
+data/enrichment/
+
+# Claude Code workspace state
+.claude/settings.local.json
+.claude/worktrees/
+.agents/
