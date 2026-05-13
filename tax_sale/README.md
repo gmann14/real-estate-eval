@@ -8,6 +8,7 @@ need to set a private ceiling from PVSC/manual appraisal and diligence.
 
 📖 **For the 2027 sale, follow [RUNBOOK-2027.md](RUNBOOK-2027.md) step-by-step.**
 📖 **For PVSC assessed-value enrichment, follow [PVSC-LOOKUP-GUIDE.md](PVSC-LOOKUP-GUIDE.md).**
+📖 **For one-time data tasks (backup, OCR audit, anonymization), see [MANUAL-DATA-TODO.md](MANUAL-DATA-TODO.md).**
 
 Design spec: [`docs/specs/tax-sale-bid-predictor.md`](../docs/specs/tax-sale-bid-predictor.md).
 
