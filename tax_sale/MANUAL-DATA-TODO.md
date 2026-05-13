@@ -51,32 +51,56 @@ value proxy. Adding assessed values will:
 **Effort:** ~30 minutes per year × 5 years with bidding outcomes ≈ 2.5
 hours. Split across multiple sittings as you prefer.
 
-**Process:**
+### 📋 The actual checklist
+
+**Auto-generated from the current dataset:** [`PVSC-CHECKLIST.md`](PVSC-CHECKLIST.md)
+
+That file has one row per lot you need to look up, organized by year,
+with the **AAN**, **PID**, **civic address**, **community**, **opening
+bid**, **outcome**, and **lot description** all visible. Tick the
+checkbox column as you go. Re-generate after each session to shrink the
+list:
 
 ```bash
-# One year at a time; generates a CSV per year with pre-filled AANs.
-python3 -m tax_sale enrichment-template --year 2021 \
-  --out data/enrichment/pvsc-2021.csv
-python3 -m tax_sale enrichment-template --year 2022 \
-  --out data/enrichment/pvsc-2022.csv
-# ...etc for 2023, 2024, 2025, 2026
+python3 tax_sale/scripts/generate_pvsc_checklist.py --out tax_sale/PVSC-CHECKLIST.md
 ```
 
-Then for each CSV, follow [PVSC-LOOKUP-GUIDE.md](PVSC-LOOKUP-GUIDE.md):
-look up each AAN at <https://www.pvsc.ca/find-assessment>, paste values
-into the CSV.
+(Lots that already have enrichment data are filtered out automatically,
+so the checklist gets shorter each pass.)
 
-**Priority order if you're going to do this in batches:**
+### Priority order
 
-1. **2026** first — most recent, freshest assessments, smallest year (12 lots)
-2. **2025** — same template as 2026 (14 lots)
-3. **2024** — useful comps for 2027 (15 lots)
-4. **2023** — only 8 lots; quick win
-5. **2022** — 24 lots, longest of the years
-6. **2021** — 20 lots, no property-info docs so AANs only come from awards
+1. **2026** first — most recent, freshest assessments, smallest year (12 lots, ~20 min)
+2. **2025** — same template as 2026 (13 lots, ~20 min)
+3. **2024** — useful comps for 2027 (15 lots, ~25 min)
+4. **2023** — only 7 lots; quick win
+5. **2022** — 16 sold + 8 no-bid lots, longest year (~40 min)
+6. **2021** — 16 sold + 4 no-bid lots; no property-info docs so PIDs missing (~30 min)
 
-**After each year**, run `python3 -m tax_sale stats` to confirm
-`has_enrichment` count went up.
+### Process per year
+
+```bash
+# 1. Generate the empty CSV (or re-generate if already done)
+python3 -m tax_sale enrichment-template --year 2026 \
+  --out data/enrichment/pvsc-2026.csv
+
+# 2. Open both the CSV and tax_sale/PVSC-CHECKLIST.md side by side.
+
+# 3. For each row in the checklist:
+#    a. Copy the AAN
+#    b. Paste into https://www.pvsc.ca/find-assessment (Search by AAN)
+#    c. Solve the reCAPTCHA, hit Submit
+#    d. Cross-check the address PVSC shows matches the checklist's Civic Address
+#    e. Read off assessed_value (+ assessed_land, year_built, lot_acres,
+#       structure_sqft if shown); paste into the CSV
+#    f. Tick the checkbox in PVSC-CHECKLIST.md
+
+# 4. Save the CSV. Verify it loaded:
+python3 -m tax_sale stats   # has_enrichment count should jump by however many rows you filled in
+```
+
+Detailed gotchas (multi-parcel, AAN-not-found, vacant land vs improved,
+etc.) are in [PVSC-LOOKUP-GUIDE.md](PVSC-LOOKUP-GUIDE.md).
 
 ---
 
